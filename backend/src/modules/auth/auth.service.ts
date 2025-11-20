@@ -1,7 +1,9 @@
 import { Injectable, BadRequestException, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { SignupDto } from './dto/signup.dto';
-import { LoginDto } from './dto/login.dto'; // <--- Import LoginDto
+import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -15,7 +17,6 @@ export class AuthService {
   }
 
   async signup(dto: SignupDto) {
-    // ... existing signup code ...
     const { data: authData, error: authError } = await this.supabase.auth.admin.createUser({
       email: dto.email,
       password: dto.password,
@@ -39,7 +40,8 @@ export class AuthService {
       });
 
     if (profileError) {
-      console.error('Profile creation error:', profileError); // <--- Added logging
+      console.error('Profile creation error:', profileError);
+      // Rollback: delete auth user if profile creation fails
       await this.supabase.auth.admin.deleteUser(userId);
       throw new InternalServerErrorException('Failed to create user profile');
     }
@@ -47,9 +49,7 @@ export class AuthService {
     return { message: 'User registered successfully', userId: userId };
   }
 
-  // --- NEW LOGIN METHOD ---
   async login(dto: LoginDto) {
-    // 1. Authenticate with Supabase Auth
     const { data, error } = await this.supabase.auth.signInWithPassword({
       email: dto.email,
       password: dto.password,
@@ -59,8 +59,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // 2. Fetch the User's Profile (Role & Tenant)
-    // We need this so the frontend knows if they are an Admin or Customer
     const { data: profile, error: profileError } = await this.supabase
       .from('profiles')
       .select('*')
@@ -71,7 +69,6 @@ export class AuthService {
       throw new InternalServerErrorException('Profile not found for this user');
     }
 
-    // 3. Return everything the frontend needs
     return {
       access_token: data.session.access_token,
       refresh_token: data.session.refresh_token,
@@ -79,8 +76,8 @@ export class AuthService {
         id: data.user.id,
         email: data.user.email,
         full_name: profile.full_name,
-        role: profile.role,       // Crucial for routing (Admin vs Customer)
-        tenant_id: profile.tenant_id // Crucial for identifying the Agency
+        role: profile.role,
+        tenant_id: profile.tenant_id
       }
     };
   }
@@ -92,7 +89,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid token');
     }
 
-    // Fetch profile to get role/tenant info
     const { data: profile } = await this.supabase
       .from('profiles')
       .select('*')
@@ -101,14 +97,49 @@ export class AuthService {
 
     return {
       ...user,
-      ...profile // Merge profile data (role, tenant_id, etc.)
+      ...profile
     };
   }
 
   async logout(token: string) {
-    // Supabase signOut only works client-side, but we can invalidate refresh tokens server-side
-    // For API, we just instruct the frontend to delete the token
-    // Optionally, you can revoke refresh tokens here if needed
     return { message: 'Logged out successfully' };
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const redirectUrl = process.env.PASSWORD_RESET_REDIRECT_URL || 'http://localhost:3000/reset-password';
+
+    const { data, error } = await this.supabase.auth.resetPasswordForEmail(dto.email, {
+      redirectTo: redirectUrl,
+    });
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    // Don't reveal if email exists (security best practice)
+    return {
+      message: 'If an account with that email exists, a password reset link has been sent.',
+    };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    // Token comes from Supabase email link (access_token from URL hash)
+    const { data: { user }, error: verifyError } = await this.supabase.auth.getUser(dto.token);
+
+    if (verifyError || !user) {
+      throw new UnauthorizedException('Invalid or expired reset token. Please request a new password reset link.');
+    }
+
+    const { data, error } = await this.supabase.auth.admin.updateUserById(user.id, {
+      password: dto.newPassword,
+    });
+
+    if (error) {
+      throw new BadRequestException(`Failed to reset password: ${error.message}`);
+    }
+
+    return {
+      message: 'Password has been reset successfully. You can now login with your new password.',
+    };
   }
 }

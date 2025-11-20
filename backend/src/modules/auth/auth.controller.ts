@@ -2,6 +2,8 @@ import { Controller, Post, Body, HttpCode, HttpStatus, Get, UseGuards } from '@n
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
@@ -16,7 +18,7 @@ export class AuthController {
   }
 
   @Post('login')
-  @HttpCode(HttpStatus.OK) // Return 200 OK instead of 201 Created
+  @HttpCode(HttpStatus.OK)
   async login(@Body() body: LoginDto) {
     return this.authService.login(body);
   }
@@ -30,7 +32,18 @@ export class AuthController {
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   async logout(@CurrentUser() user: any, @Body('token') token: string) {
-    // The frontend should send the access token in the body
     return this.authService.logout(token);
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 }
