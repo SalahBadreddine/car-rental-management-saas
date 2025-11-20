@@ -4,6 +4,7 @@ import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 @Injectable()
 export class AuthService {
@@ -103,6 +104,34 @@ export class AuthService {
 
   async logout(token: string) {
     return { message: 'Logged out successfully' };
+  }
+
+  async refreshToken(dto: RefreshTokenDto) {
+    const { data, error } = await this.supabase.auth.refreshSession({
+      refresh_token: dto.refresh_token,
+    });
+
+    if (error || !data.session || !data.user) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    const { data: profile } = await this.supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+
+    return {
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        full_name: profile?.full_name,
+        role: profile?.role,
+        tenant_id: profile?.tenant_id,
+      },
+    };
   }
 
   async forgotPassword(dto: ForgotPasswordDto) {
