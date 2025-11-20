@@ -42,6 +42,10 @@ lerna-debug.log*
 .env.production.local
 .env.local
 
+# History files
+.history/
+**/.history/
+
 # temp directory
 .temp
 .tmp
