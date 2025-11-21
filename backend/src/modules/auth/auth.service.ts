@@ -5,6 +5,7 @@ import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 
 @Injectable()
 export class AuthService {
@@ -18,10 +19,13 @@ export class AuthService {
   }
 
   async signup(dto: SignupDto) {
+    const role = dto.role || 'customer';
+    const shouldAutoConfirm = role === 'client_admin';
+
     const { data: authData, error: authError } = await this.supabase.auth.admin.createUser({
       email: dto.email,
       password: dto.password,
-      email_confirm: true,
+      email_confirm: shouldAutoConfirm,
     });
 
     if (authError) {
@@ -36,18 +40,34 @@ export class AuthService {
         id: userId,
         full_name: dto.fullName,
         phone_number: dto.phoneNumber,
-        role: dto.role || 'customer',
+        role: role,
         tenant_id: dto.tenantId || null
       });
 
     if (profileError) {
       console.error('Profile creation error:', profileError);
-      // Rollback: delete auth user if profile creation fails
       await this.supabase.auth.admin.deleteUser(userId);
       throw new InternalServerErrorException('Failed to create user profile');
     }
 
-    return { message: 'User registered successfully', userId: userId };
+    if (!shouldAutoConfirm) {
+      const redirectUrl = process.env.EMAIL_VERIFICATION_REDIRECT_URL || 'http://localhost:3000/verify-email';
+      await this.supabase.auth.resend({
+        type: 'signup',
+        email: dto.email,
+        options: {
+          emailRedirectTo: redirectUrl,
+        },
+      });
+    }
+
+    return {
+      message: shouldAutoConfirm
+        ? 'User registered successfully'
+        : 'User registered successfully. Please check your email to verify your account.',
+      emailVerified: shouldAutoConfirm,
+      userId: userId,
+    };
   }
 
   async login(dto: LoginDto) {
@@ -57,6 +77,10 @@ export class AuthService {
     });
 
     if (error) {
+      // Check if error is due to unverified email
+      if (error.message?.includes('Email not confirmed') || error.message?.includes('email_not_confirmed')) {
+        throw new UnauthorizedException('Please verify your email before logging in');
+      }
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -68,6 +92,11 @@ export class AuthService {
 
     if (profileError) {
       throw new InternalServerErrorException('Profile not found for this user');
+    }
+
+    // Double check email verification (only for customers)
+    if (profile.role === 'customer' && !data.user.email_confirmed_at) {
+      throw new UnauthorizedException('Please verify your email before logging in');
     }
 
     return {
@@ -169,6 +198,50 @@ export class AuthService {
 
     return {
       message: 'Password has been reset successfully. You can now login with your new password.',
+    };
+  }
+
+  async verifyEmail(dto: VerifyEmailDto) {
+    // Token comes from Supabase email link (access_token from URL hash)
+    const { data: { user }, error } = await this.supabase.auth.getUser(dto.token);
+
+    if (error || !user) {
+      throw new UnauthorizedException('Invalid or expired verification token');
+    }
+
+    if (user.email_confirmed_at) {
+      return { message: 'Email is already verified' };
+    }
+
+    // Use admin API to confirm email
+    const { data, error: confirmError } = await this.supabase.auth.admin.updateUserById(user.id, {
+      email_confirm: true,
+    });
+
+    if (confirmError) {
+      throw new BadRequestException(confirmError.message);
+    }
+
+    return { message: 'Email verified successfully' };
+  }
+
+  async resendVerificationEmail(email: string) {
+    const redirectUrl = process.env.EMAIL_VERIFICATION_REDIRECT_URL || 'http://localhost:3000/verify-email';
+
+    const { data, error } = await this.supabase.auth.resend({
+      type: 'signup',
+      email: email,
+      options: {
+        emailRedirectTo: redirectUrl,
+      },
+    });
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    return {
+      message: 'If an account with that email exists and is unverified, a verification email has been sent.',
     };
   }
 }
