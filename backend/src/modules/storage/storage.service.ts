@@ -1,5 +1,5 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
 
 export type UploadedFile = {
@@ -65,6 +65,27 @@ export class StorageService {
     } catch (error) {
       console.error('R2 Upload Error:', error);
       throw new InternalServerErrorException('Failed to upload image');
+    }
+  }
+
+  async deleteFile(publicUrl: string): Promise<void> {
+    try {
+      // Extract the R2 key from the public URL
+      // publicUrl format: https://cdn.example.com/tenants/.../branding/uuid-filename.png
+      // We need: tenants/.../branding/uuid-filename.png
+      const url = new URL(publicUrl);
+      const key = url.pathname.startsWith('/') ? url.pathname.slice(1) : url.pathname;
+
+      await this.s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+        }),
+      );
+    } catch (error) {
+      console.error('R2 Delete Error:', error);
+      // Don't throw - if deletion fails, we still want to continue with upload
+      // The old file will just remain (orphaned)
     }
   }
 }

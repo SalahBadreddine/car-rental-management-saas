@@ -4,12 +4,14 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';     
 import { AuthModule } from './modules/auth/auth.module'; 
 import { LocationsModule } from './modules/locations/locations.module';
+import { TenantsModule } from './modules/tenants/tenants.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     AuthModule,
     LocationsModule,
+    TenantsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
