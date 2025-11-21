@@ -6,6 +6,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -242,6 +243,31 @@ export class AuthService {
 
     return {
       message: 'If an account with that email exists and is unverified, a verification email has been sent.',
+    };
+  }
+
+  async changePassword(userId: string, userEmail: string, dto: ChangePasswordDto) {
+    // Verify current password by attempting to sign in
+    const { error: verifyError } = await this.supabase.auth.signInWithPassword({
+      email: userEmail,
+      password: dto.currentPassword,
+    });
+
+    if (verifyError) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    // Update password using admin API
+    const { data, error } = await this.supabase.auth.admin.updateUserById(userId, {
+      password: dto.newPassword,
+    });
+
+    if (error) {
+      throw new BadRequestException(`Failed to change password: ${error.message}`);
+    }
+
+    return {
+      message: 'Password changed successfully',
     };
   }
 }
