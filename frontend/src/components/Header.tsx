@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Car } from "lucide-react";
+import logo from "@/assets/logo.png"
 
 const Header = () => {
   const location = useLocation();
@@ -11,7 +12,7 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity">
-            <Car className="w-8 h-8" />
+            <img src={logo}></img>
             <span className="font-heading font-bold text-xl">RentoGo</span>
           </Link>
           

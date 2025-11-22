@@ -3,10 +3,12 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { MapPin, Car as CarIcon, Wallet, ArrowRight, Users, FileText, Gauge } from "lucide-react";
-import heroCar from "@/assets/hero-car.jpg";
 import fordFiesta from "@/assets/ford-fiesta.jpg";
 import bmwM2 from "@/assets/bmw-m2.jpg";
 import camaroSS from "@/assets/camaro-ss.jpg";
+import heroCar from "@/assets/car_home.png";
+import traceCar from "@/assets/car_trace.png";
+import HeroBackground from "@/components/HeroBackground";
 
 const Index = () => {
   return (
@@ -14,44 +16,36 @@ const Index = () => {
       <Header />
       
       {/* Hero Section */}
-      <section
-        className="relative bg-hero-bg text-white overflow-hidden"
-        style={{
-          backgroundImage: `url(${heroCar})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center right',
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-hero-bg via-hero-bg/90 to-transparent" />
-        
-        <div className="relative z-10 container mx-auto px-4 py-24 md:py-32">
-          <div className="max-w-2xl">
-            <h1 className="font-heading text-5xl md:text-6xl font-bold mb-6 leading-tight">
-              Experience the road like never before with{" "}
-              <span className="text-primary">RentoGo.</span>
-            </h1>
-            <p className="text-lg text-white/80 mb-8 leading-relaxed">
-              Aliquam adipiscing velit semper morbi. Purus non eu cursus porttitor bibendum et gravida. Quisque nibh interdum gravida ultricorper
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <Button
-                size="lg"
-                className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 h-12 rounded-lg"
-              >
-                Get your car today
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-white text-white hover:bg-white hover:text-foreground font-semibold px-8 h-12 rounded-lg"
-              >
-                See all cars
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
-            </div>
-          </div>
+      <HeroBackground trace={traceCar} car={heroCar}>
+        <h1 className="font-heading text-5xl md:text-5xl font-bold mb-6 leading-tight text-white">
+          Experience the road like
+          never before with{" "}
+          <span className="text-primary">RentoGo.</span>
+        </h1>
+
+        <p className="text-lg text-white/80 mb-8 leading-relaxed">
+          Aliquam adipiscing velit semper morbi. Purus non eu cursus porttitor
+          tristique et gravida. Quis nunc interdum gravida ullamcorper
+        </p>
+
+        <div className="flex flex-wrap gap-4">
+          <Button
+            size="lg"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 h-12 rounded-lg"
+          >
+            Get your car today
+          </Button>
+
+          <Button
+            size="lg"
+            variant="outline"
+            className="border-white text-white hover:bg-white hover:text-black font-semibold px-8 h-12 rounded-lg"
+          >
+            See all cars
+            <ArrowRight className="ml-2 w-4 h-4" />
+          </Button>
         </div>
-      </section>
+      </HeroBackground>
 
       {/* Features Section */}
       <section className="py-20 bg-background">
