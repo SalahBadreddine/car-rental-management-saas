@@ -28,7 +28,7 @@ const SignUp = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       
-      <main className="flex-1 flex items-center justify-center p-4">
+      <main className="flex-1 flex items-center justify-center">
         <HeroBackground trace={traceCar} car={heroCar}>
           <div className="absolute inset-0 bg-gradient-to-r from-hero-bg via-hero-bg/95 to-transparent" />
             

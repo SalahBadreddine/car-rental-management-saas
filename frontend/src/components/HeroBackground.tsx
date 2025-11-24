@@ -9,11 +9,10 @@ const HeroBackground = ({ trace, car, children }: HeroBackgroundProps) => {
     <section className="relative w-full">
       <div
         className="
-          container mx-auto px-4
-          relative min-h-[80vh]
-          bg-black rounded-[30px]
+           mx-0 px-4
+          relative min-h-[100vh]
+          bg-black 
           overflow-hidden flex items-center
-          mt-10
         "
       >
         {/* Tire trace */}

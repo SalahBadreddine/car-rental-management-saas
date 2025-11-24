@@ -3,12 +3,13 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { MapPin, Car as CarIcon, Wallet, ArrowRight, Users, FileText, Gauge } from "lucide-react";
-import fordFiesta from "@/assets/ford-fiesta.jpg";
-import bmwM2 from "@/assets/bmw-m2.jpg";
-import camaroSS from "@/assets/camaro-ss.jpg";
+import fordFiesta from "@/assets/ford.png";
+import bmwM2 from "@/assets/bwm.png";
+import toyota from "@/assets/toyota.png";
 import heroCar from "@/assets/car_home.png";
 import traceCar from "@/assets/car_trace.png";
 import HeroBackground from "@/components/HeroBackground";
+import CarCard from "@/components/CarCard";
 
 const Index = () => {
   return (
@@ -85,58 +86,82 @@ const Index = () => {
       </section>
 
       {/* Best Deals Section */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <h2 className="font-heading text-4xl font-bold text-center mb-16">
+      <section className="py-20">
+        <div className="mx-auto">
+          <h2 className="font-heading text-4xl md:text-5xl font-bold text-center mb-16">
             Best deals out there
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-            <div className="bg-card rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-shadow">
-              <div className="bg-gradient-to-br from-card-dark to-card-dark/90 p-8 h-64 flex items-center justify-center">
-                <img src={fordFiesta} alt="Ford Fiesta" className="w-full h-full object-contain" />
-              </div>
-              <div className="p-6 text-center">
-                <h3 className="font-heading text-2xl font-bold mb-2">Ford Fiesta</h3>
-                <p className="text-primary text-3xl font-bold mb-6">From $20</p>
-                <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg h-11">
-                  Book now
-                </Button>
-              </div>
-            </div>
+          <div
+            className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 p-10"
+            style={{ backgroundColor: 'rgba(27, 26, 26, 0.23)' }}
+          >
+          <CarCard 
+            image={fordFiesta} 
+            name="Ford Fiesta" 
+            price="20" 
+          />
 
-            <div className="bg-card rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-shadow">
-              <div className="bg-gradient-to-br from-card-dark to-card-dark/90 p-8 h-64 flex items-center justify-center">
-                <img src={bmwM2} alt="BMW M2" className="w-full h-full object-contain" />
-              </div>
-              <div className="p-6 text-center">
-                <h3 className="font-heading text-2xl font-bold mb-2">Bmw M2</h3>
-                <p className="text-primary text-3xl font-bold mb-6">From $80</p>
-                <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg h-11">
-                  Book now
-                </Button>
-              </div>
-            </div>
+          <CarCard 
+            image={bmwM2} 
+            name="Bmw M2" 
+            price="80" 
+          />
 
-            <div className="bg-card rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-shadow">
-              <div className="bg-gradient-to-br from-card-dark to-card-dark/90 p-8 h-64 flex items-center justify-center">
-                <img src={camaroSS} alt="Camaro SS" className="w-full h-full object-contain" />
-              </div>
-              <div className="p-6 text-center">
-                <h3 className="font-heading text-2xl font-bold mb-2">Camaro SS</h3>
-                <p className="text-primary text-3xl font-bold mb-6">From $120</p>
-                <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg h-11">
-                  Book now
-                </Button>
-              </div>
-            </div>
+          <CarCard 
+            image={toyota} 
+            name="Camaro SS" 
+            price="120" 
+          />  
           </div>
 
           <div className="text-center">
             <Button
               variant="outline"
               size="lg"
-              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-semibold px-8 h-12 rounded-lg"
+              className="border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-semibold px-10 py-3 rounded-lg text-base transition-all"
+            >
+              See all cars
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* On Fire Cars Section */}
+      <section className="py-20">
+        <div className="mx-auto">
+          <h2 className="font-heading text-4xl md:text-5xl font-bold text-center mb-16">
+            On Fire Cars
+          </h2>
+          
+          <div
+            className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 p-10"
+            style={{ backgroundColor: 'rgba(27, 26, 26, 0.23)' }}
+          >
+          <CarCard 
+            image={fordFiesta} 
+            name="Ford Fiesta" 
+            price="20" 
+          />
+
+          <CarCard 
+            image={bmwM2} 
+            name="Bmw M2" 
+            price="80" 
+          />
+
+          <CarCard 
+            image={toyota} 
+            name="Camaro SS" 
+            price="120" 
+          />  
+          </div>
+
+          <div className="text-center">
+            <Button
+              variant="outline"
+              size="lg"
+              className="border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-semibold px-10 py-3 rounded-lg text-base transition-all"
             >
               See all cars
             </Button>

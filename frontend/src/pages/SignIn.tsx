@@ -21,7 +21,7 @@ const SignIn = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       
-      <main className="flex-1 flex items-center justify-center p-4">
+      <main className="flex-1 flex items-center justify-center">
         <HeroBackground trace={traceCar} car={heroCar}>
           <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent pointer-events-none" />
           <div className="relative z-10 p-8 md:p-16 min-h-[600px] flex items-center">
