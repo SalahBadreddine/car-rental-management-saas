@@ -1,16 +1,17 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Settings, Fuel, Wind, Heart, X, Search, Car as CarIcon } from "lucide-react";
-import { cars, brands, carTypes } from "@/data/cars";
+import { Settings, Fuel, Wind, X, Search, Car as CarIcon, MapPin, Check } from "lucide-react";
+import { cars, brands, carTypes, locations } from "@/data/cars";
 import { Car, CarFilters } from "@/types/car";
 
 const Vehicles = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [filters, setFilters] = useState<CarFilters>({
@@ -19,12 +20,22 @@ const Vehicles = () => {
     type: null,
     startingPrice: null,
     endingPrice: null,
+    location: null,
   });
-  const [selectedCars, setSelectedCars] = useState<number[]>([]);
+  const [selectedCars, setSelectedCars] = useState<number[]>(() => {
+    const stored = localStorage.getItem("compareCars");
+    return stored ? JSON.parse(stored) : [];
+  });
+  const [priceInputs, setPriceInputs] = useState<{ starting: string; ending: string }>({
+    starting: "",
+    ending: "",
+  });
 
-  const handleFilterChange = (key: keyof CarFilters, value: any) => {
+  const handleFilterChange = (key: keyof CarFilters, value: any, keepOpen = false) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
-    setActiveFilter(null);
+    if (!keepOpen) {
+      setActiveFilter(null);
+    }
   };
 
   const filteredCars = useMemo(() => {
@@ -59,14 +70,29 @@ const Vehicles = () => {
         return false;
       }
 
+      // Location filter
+      if (filters.location && car.location !== filters.location) {
+        return false;
+      }
+
       return true;
     });
   }, [filters]);
 
+  useEffect(() => {
+    // Sync with localStorage
+    localStorage.setItem("compareCars", JSON.stringify(selectedCars));
+  }, [selectedCars]);
+
   const toggleCarSelection = (carId: number) => {
-    setSelectedCars((prev) =>
-      prev.includes(carId) ? prev.filter((id) => id !== carId) : [...prev, carId]
-    );
+    setSelectedCars((prev) => {
+      const newSelection = prev.includes(carId)
+        ? prev.filter((id) => id !== carId)
+        : prev.length < 4
+        ? [...prev, carId]
+        : prev;
+      return newSelection;
+    });
   };
 
   const handleViewDetails = (carId: number) => {
@@ -198,13 +224,24 @@ const Vehicles = () => {
                 <Input
                   type="number"
                   placeholder="Min price"
-                  value={filters.startingPrice || ""}
-                  onChange={(e) => handleFilterChange("startingPrice", e.target.value ? Number(e.target.value) : null)}
+                  value={priceInputs.starting}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setPriceInputs((prev) => ({ ...prev, starting: value }));
+                    handleFilterChange("startingPrice", value === "" ? null : (value ? Number(value) : null), true);
+                  }}
+                  onBlur={() => {
+                    // Close popover when user clicks outside
+                    setTimeout(() => setActiveFilter(null), 200);
+                  }}
                   className="w-full"
                 />
-                {filters.startingPrice && (
+                {filters.startingPrice !== null && (
                   <button
-                    onClick={() => handleFilterChange("startingPrice", null)}
+                    onClick={() => {
+                      setPriceInputs((prev) => ({ ...prev, starting: "" }));
+                      handleFilterChange("startingPrice", null);
+                    }}
                     className="w-full text-left px-4 py-2 rounded-md hover:bg-muted transition-colors text-muted-foreground"
                   >
                     Clear
@@ -233,13 +270,62 @@ const Vehicles = () => {
                 <Input
                   type="number"
                   placeholder="Max price"
-                  value={filters.endingPrice || ""}
-                  onChange={(e) => handleFilterChange("endingPrice", e.target.value ? Number(e.target.value) : null)}
+                  value={priceInputs.ending}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setPriceInputs((prev) => ({ ...prev, ending: value }));
+                    handleFilterChange("endingPrice", value === "" ? null : (value ? Number(value) : null), true);
+                  }}
+                  onBlur={() => {
+                    // Close popover when user clicks outside
+                    setTimeout(() => setActiveFilter(null), 200);
+                  }}
                   className="w-full"
                 />
-                {filters.endingPrice && (
+                {filters.endingPrice !== null && (
                   <button
-                    onClick={() => handleFilterChange("endingPrice", null)}
+                    onClick={() => {
+                      setPriceInputs((prev) => ({ ...prev, ending: "" }));
+                      handleFilterChange("endingPrice", null);
+                    }}
+                    className="w-full text-left px-4 py-2 rounded-md hover:bg-muted transition-colors text-muted-foreground"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          <Popover open={activeFilter === "Location"} onOpenChange={(open) => setActiveFilter(open ? "Location" : null)}>
+            <PopoverTrigger asChild>
+              <button
+                className={`px-6 py-3 rounded-full font-medium transition-all ${
+                  filters.location
+                    ? "bg-primary text-primary-foreground shadow-lg"
+                    : activeFilter === "Location"
+                    ? "bg-primary text-primary-foreground shadow-lg"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+              >
+                Location {filters.location && `(${filters.location})`}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64">
+              <div className="space-y-2">
+                {locations.map((location) => (
+                  <button
+                    key={location}
+                    onClick={() => handleFilterChange("location", location)}
+                    className="w-full text-left px-4 py-2 rounded-md hover:bg-muted transition-colors flex items-center gap-2"
+                  >
+                    <MapPin className="w-4 h-4 text-primary" />
+                    <span>{location}</span>
+                  </button>
+                ))}
+                {filters.location && (
+                  <button
+                    onClick={() => handleFilterChange("location", null)}
                     className="w-full text-left px-4 py-2 rounded-md hover:bg-muted transition-colors text-muted-foreground"
                   >
                     Clear
@@ -259,14 +345,19 @@ const Vehicles = () => {
                 selectedCars.includes(car.id) ? "border-primary" : "border-transparent"
               }`}
             >
+              {/* Selection Checkbox */}
               <button
                 onClick={() => toggleCarSelection(car.id)}
-                className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 hover:bg-white flex items-center justify-center transition-colors shadow-md"
+                className={`absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-md ${
+                  selectedCars.includes(car.id)
+                    ? "bg-red-500 text-white"
+                    : "bg-white/90 hover:bg-white text-muted-foreground"
+                }`}
               >
                 {selectedCars.includes(car.id) ? (
-                  <X className="w-5 h-5 text-primary" />
+                  <Check className="w-5 h-5" />
                 ) : (
-                  <Heart className="w-5 h-5 text-muted-foreground" />
+                  <Check className="w-5 h-5" />
                 )}
               </button>
               
@@ -285,11 +376,19 @@ const Vehicles = () => {
                     <p className="text-muted-foreground text-xs">per day</p>
                   </div>
                 </div>
+
+                {/* Location */}
+                {car.location && (
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
+                    <MapPin className="w-4 h-4 text-primary" />
+                    <span>{car.location}</span>
+                  </div>
+                )}
                 
                 <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6 flex-wrap">
                   <div className="flex items-center gap-1">
                     <Settings className="w-4 h-4" />
-                    <span>{car.transmission}</span>
+                    <span>{car.transmission === "Automatic" ? "Automat" : "Manual"}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Fuel className="w-4 h-4" />
@@ -303,12 +402,24 @@ const Vehicles = () => {
                   )}
                 </div>
                 
-                <Button
-                  onClick={() => handleViewDetails(car.id)}
-                  className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold rounded-lg h-11"
-                >
-                  View Details
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => toggleCarSelection(car.id)}
+                    className={`flex-1 font-semibold rounded-lg h-11 ${
+                      selectedCars.includes(car.id)
+                        ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                        : "bg-muted hover:bg-muted/80 text-muted-foreground"
+                    }`}
+                  >
+                    {selectedCars.includes(car.id) ? "Selected" : "Add to compare"}
+                  </Button>
+                  <Button
+                    onClick={() => handleViewDetails(car.id)}
+                    className="flex-1 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold rounded-lg h-11"
+                  >
+                    View Details
+                  </Button>
+                </div>
               </div>
             </div>
           ))}
@@ -325,8 +436,7 @@ const Vehicles = () => {
           <div className="text-center mb-12">
             <Button
               onClick={() => {
-                // Navigate to compare page or show comparison
-                console.log("Compare cars:", selectedCars);
+                navigate("/compare", { state: { carIds: selectedCars } });
               }}
               className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-12 py-6 rounded-lg text-lg"
             >
@@ -338,14 +448,77 @@ const Vehicles = () => {
         {/* Brand Logos */}
         <div className="bg-card rounded-2xl p-8 mb-12">
           <div className="flex flex-wrap justify-center items-center gap-12">
-            {brands.map((brand) => (
-              <div
-                key={brand}
-                className="grayscale hover:grayscale-0 transition-all opacity-60 hover:opacity-100 cursor-pointer"
-              >
-                <div className="text-2xl font-bold text-foreground">{brand}</div>
-              </div>
-            ))}
+            {/* Toyota */}
+            <div className="grayscale hover:grayscale-0 transition-all opacity-60 hover:opacity-100 cursor-pointer">
+              <img 
+                src="https://logos-world.net/wp-content/uploads/2020/05/Toyota-Logo.png" 
+                alt="Toyota" 
+                className="h-16 w-auto object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
+            
+            {/* Ford */}
+            <div className="grayscale hover:grayscale-0 transition-all opacity-60 hover:opacity-100 cursor-pointer">
+              <img 
+                src="https://logos-world.net/wp-content/uploads/2020/05/Ford-Logo.png" 
+                alt="Ford" 
+                className="h-16 w-auto object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
+            
+            {/* Mercedes-Benz */}
+            <div className="grayscale hover:grayscale-0 transition-all opacity-60 hover:opacity-100 cursor-pointer">
+              <img 
+                src="https://logos-world.net/wp-content/uploads/2020/05/Mercedes-Benz-Logo.png" 
+                alt="Mercedes-Benz" 
+                className="h-16 w-auto object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
+            
+            {/* Jeep */}
+            <div className="grayscale hover:grayscale-0 transition-all opacity-60 hover:opacity-100 cursor-pointer">
+              <img 
+                src="https://logos-world.net/wp-content/uploads/2020/05/Jeep-Logo.png" 
+                alt="Jeep" 
+                className="h-16 w-auto object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
+            
+            {/* BMW */}
+            <div className="grayscale hover:grayscale-0 transition-all opacity-60 hover:opacity-100 cursor-pointer">
+              <img 
+                src="https://logos-world.net/wp-content/uploads/2020/05/BMW-Logo.png" 
+                alt="BMW" 
+                className="h-16 w-auto object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
+            
+            {/* Audi */}
+            <div className="grayscale hover:grayscale-0 transition-all opacity-60 hover:opacity-100 cursor-pointer">
+              <img 
+                src="https://logos-world.net/wp-content/uploads/2020/05/Audi-Logo.png" 
+                alt="Audi" 
+                className="h-16 w-auto object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
           </div>
         </div>
       </main>

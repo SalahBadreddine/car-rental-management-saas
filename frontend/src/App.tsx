@@ -8,6 +8,11 @@ import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import Vehicles from "./pages/Vehicles";
 import CarDetails from "./pages/CarDetails";
+import CompareCars from "./pages/CompareCars";
+import RentCar from "./pages/RentCar";
+import Payment from "./pages/Payment";
+import ConfirmationCode from "./pages/ConfirmationCode";
+import ReservationConfirmation from "./pages/ReservationConfirmation";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
@@ -26,6 +31,11 @@ const App = () => (
           <Route path="/signup" element={<SignUp />} />
           <Route path="/vehicles" element={<Vehicles />} />
           <Route path="/vehicles/:id" element={<CarDetails />} />
+          <Route path="/compare" element={<CompareCars />} />
+          <Route path="/rent/:id" element={<RentCar />} />
+          <Route path="/rent/payment" element={<Payment />} />
+          <Route path="/rent/confirm-code" element={<ConfirmationCode />} />
+          <Route path="/rent/confirmation" element={<ReservationConfirmation />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="*" element={<NotFound />} />
