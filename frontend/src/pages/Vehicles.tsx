@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -6,8 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Settings, Fuel, Wind, Heart, X, Search, Car as CarIcon } from "lucide-react";
-import { cars, brands, carTypes } from "@/data/cars";
-import { Car, CarFilters } from "@/types/car";
+import { carsApi, Car } from "@/services/carsApi";
+
+interface CarFilters {
+  search: string;
+  brand: string | null;
+  type: string | null;
+  startingPrice: number | null;
+  endingPrice: number | null;
+}
 
 const Vehicles = () => {
   const navigate = useNavigate();
@@ -20,58 +27,131 @@ const Vehicles = () => {
     startingPrice: null,
     endingPrice: null,
   });
-  const [selectedCars, setSelectedCars] = useState<number[]>([]);
+  const [selectedCars, setSelectedCars] = useState<string[]>([]);
+  
+  // State for data from API
+  const [cars, setCars] = useState<Car[]>([]);
+  const [brands, setBrands] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch initial data on component mount
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        setLoading(true);
+        const [carsData, brandsData, categoriesData] = await Promise.all([
+          carsApi.getAllCars(),
+          carsApi.getBrands(),
+          carsApi.getCategories(),
+        ]);
+        
+        setCars(carsData);
+        setBrands(brandsData);
+        setCategories(categoriesData);
+        setError(null);
+      } catch (err) {
+        setError('Failed to load cars. Please try again.');
+        console.error('Error loading data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInitialData();
+  }, []);
+
+  // Fetch filtered cars whenever filters change
+  useEffect(() => {
+    const fetchFilteredCars = async () => {
+      try {
+        setLoading(true);
+        const filteredCars = await carsApi.searchCars({
+          search: filters.search || undefined,
+          brand: filters.brand || undefined,
+          type: filters.type || undefined,
+          startingPrice: filters.startingPrice || undefined,
+          endingPrice: filters.endingPrice || undefined,
+        });
+        
+        setCars(filteredCars);
+        setError(null);
+      } catch (err) {
+        setError('Failed to search cars. Please try again.');
+        console.error('Error searching cars:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Check if there are active filters
+    const hasActiveFilters = filters.search || filters.brand || filters.type || 
+                            filters.startingPrice !== null || filters.endingPrice !== null;
+    
+    if (hasActiveFilters) {
+      fetchFilteredCars();
+    } else {
+      // No filters - reload all cars
+      const reloadAllCars = async () => {
+        try {
+          setLoading(true);
+          const allCars = await carsApi.getAllCars();
+          setCars(allCars);
+          setError(null);
+        } catch (err) {
+          setError('Failed to load cars. Please try again.');
+          console.error('Error loading cars:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      reloadAllCars();
+    }
+  }, [filters]);
 
   const handleFilterChange = (key: keyof CarFilters, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
     setActiveFilter(null);
   };
 
-  const filteredCars = useMemo(() => {
-    return cars.filter((car) => {
-      // Search filter
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        if (
-          !car.brand.toLowerCase().includes(searchLower) &&
-          !car.type.toLowerCase().includes(searchLower) &&
-          !`${car.brand} ${car.type}`.toLowerCase().includes(searchLower)
-        ) {
-          return false;
-        }
-      }
-
-      // Brand filter
-      if (filters.brand && car.brand !== filters.brand) {
-        return false;
-      }
-
-      // Type filter
-      if (filters.type && car.type !== filters.type) {
-        return false;
-      }
-
-      // Price range filter
-      if (filters.startingPrice && car.price < filters.startingPrice) {
-        return false;
-      }
-      if (filters.endingPrice && car.price > filters.endingPrice) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [filters]);
-
-  const toggleCarSelection = (carId: number) => {
+  const toggleCarSelection = (carId: string) => {
     setSelectedCars((prev) =>
       prev.includes(carId) ? prev.filter((id) => id !== carId) : [...prev, carId]
     );
   };
 
-  const handleViewDetails = (carId: number) => {
+  const handleViewDetails = (carId: string) => {
     navigate(`/vehicles/${carId}`);
   };
+
+  if (loading && cars.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <p className="text-muted-foreground text-lg">Loading cars...</p>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-500 text-lg mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -157,14 +237,13 @@ const Vehicles = () => {
             </PopoverTrigger>
             <PopoverContent className="w-64">
               <div className="space-y-2">
-                {carTypes.map((carType) => (
+                {categories.map((category) => (
                   <button
-                    key={carType.value}
-                    onClick={() => handleFilterChange("type", carType.value)}
-                    className="w-full text-left px-4 py-2 rounded-md hover:bg-muted transition-colors flex items-center gap-2"
+                    key={category}
+                    onClick={() => handleFilterChange("type", category)}
+                    className="w-full text-left px-4 py-2 rounded-md hover:bg-muted transition-colors"
                   >
-                    <span className="text-xl">{carType.icon}</span>
-                    <span>{carType.label}</span>
+                    {category}
                   </button>
                 ))}
                 {filters.type && (
@@ -190,16 +269,21 @@ const Vehicles = () => {
                     : "bg-muted text-muted-foreground hover:bg-muted/80"
                 }`}
               >
-                Starting price {filters.startingPrice && `($${filters.startingPrice})`}
+                Starting price {filters.startingPrice && `(${filters.startingPrice} DA)`}
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-64">
               <div className="space-y-4">
                 <Input
                   type="number"
-                  placeholder="Min price"
-                  value={filters.startingPrice || ""}
-                  onChange={(e) => handleFilterChange("startingPrice", e.target.value ? Number(e.target.value) : null)}
+                  placeholder="Min price (press Enter)"
+                  defaultValue={filters.startingPrice || ""}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const value = (e.target as HTMLInputElement).value;
+                      handleFilterChange("startingPrice", value ? Number(value) : null);
+                    }
+                  }}
                   className="w-full"
                 />
                 {filters.startingPrice && (
@@ -225,16 +309,21 @@ const Vehicles = () => {
                     : "bg-muted text-muted-foreground hover:bg-muted/80"
                 }`}
               >
-                Ending price {filters.endingPrice && `($${filters.endingPrice})`}
+                Ending price {filters.endingPrice && `(${filters.endingPrice} DA)`}
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-64">
               <div className="space-y-4">
                 <Input
                   type="number"
-                  placeholder="Max price"
-                  value={filters.endingPrice || ""}
-                  onChange={(e) => handleFilterChange("endingPrice", e.target.value ? Number(e.target.value) : null)}
+                  placeholder="Max price (press Enter)"
+                  defaultValue={filters.endingPrice || ""}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const value = (e.target as HTMLInputElement).value;
+                      handleFilterChange("endingPrice", value ? Number(value) : null);
+                    }
+                  }}
                   className="w-full"
                 />
                 {filters.endingPrice && (
@@ -252,7 +341,7 @@ const Vehicles = () => {
 
         {/* Vehicle Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          {filteredCars.map((car) => (
+          {cars.map((car) => (
             <div
               key={car.id}
               className={`bg-card rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all relative border-2 ${
@@ -271,17 +360,25 @@ const Vehicles = () => {
               </button>
               
               <div className="bg-gradient-to-br from-card-dark to-card-dark/80 p-8 h-48 flex items-center justify-center">
-                <CarIcon className="w-32 h-32 text-muted-foreground/30" />
+                {car.primary_image_url ? (
+                  <img 
+                    src={car.primary_image_url} 
+                    alt={`${car.make} ${car.model}`}
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <CarIcon className="w-32 h-32 text-muted-foreground/30" />
+                )}
               </div>
               
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="font-heading text-xl font-bold">{car.brand}</h3>
-                    <p className="text-muted-foreground text-sm">{car.type}</p>
+                    <h3 className="font-heading text-xl font-bold">{car.make}</h3>
+                    <p className="text-muted-foreground text-sm">{car.model}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-primary font-bold text-xl">${car.price}</p>
+                    <p className="text-primary font-bold text-xl">{car.price_per_day} DA</p>
                     <p className="text-muted-foreground text-xs">per day</p>
                   </div>
                 </div>
@@ -293,12 +390,12 @@ const Vehicles = () => {
                   </div>
                   <div className="flex items-center gap-1">
                     <Fuel className="w-4 h-4" />
-                    <span>{car.fuel}</span>
+                    <span>{car.fuel_type}</span>
                   </div>
-                  {car.ac && (
+                  {car.features?.includes("Air Conditioner") && (
                     <div className="flex items-center gap-1">
                       <Wind className="w-4 h-4" />
-                      <span>Air Conditioner</span>
+                      <span>AC</span>
                     </div>
                   )}
                 </div>
@@ -314,7 +411,7 @@ const Vehicles = () => {
           ))}
         </div>
 
-        {filteredCars.length === 0 && (
+        {cars.length === 0 && !loading && (
           <div className="text-center py-12">
             <p className="text-muted-foreground text-lg">No cars found matching your criteria.</p>
           </div>
@@ -325,7 +422,6 @@ const Vehicles = () => {
           <div className="text-center mb-12">
             <Button
               onClick={() => {
-                // Navigate to compare page or show comparison
                 console.log("Compare cars:", selectedCars);
               }}
               className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-12 py-6 rounded-lg text-lg"
