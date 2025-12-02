@@ -1,26 +1,98 @@
-import { saveTokens, saveUser } from "./auth";
+import { saveTokens, saveUser, logout, getAccessToken } from "./auth";
 
 const BASE_URL = "http://localhost:3000";
+
+let isRefreshing = false;
+let failedQueue: Array<{ resolve: Function; reject: Function }> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
 
 export async function apiRequest(
   endpoint: string,
   method: string = "GET",
   body?: Object,
-  token?: string
+  customHeaders?: Record<string, string>
 ) {
-  const headers: any = { "Content-Type": "application/json" };
+  const token = getAccessToken();
+  const headers: any = { 
+    "Content-Type": "application/json",
+    ...customHeaders 
+  };
 
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
 
-  const res = await fetch(BASE_URL + endpoint, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  const makeRequest = async (authToken: string | null) => {
+    const requestHeaders = { ...headers };
+    if (authToken) {
+      requestHeaders["Authorization"] = `Bearer ${authToken}`;
+    }
 
-  const data = await res.json().catch(() => null);
+    const res = await fetch(BASE_URL + endpoint, {
+      method,
+      headers: requestHeaders,
+      body: body ? JSON.stringify(body) : undefined,
+    });
 
-  return { status: res.status, data };
+    const data = await res.json().catch(() => null);
+    return { status: res.status, data };
+  };
+
+  // First attempt
+  let response = await makeRequest(token);
+
+  // If 401, try to refresh token
+  if (response.status === 401 && token) {
+    if (!isRefreshing) {
+      isRefreshing = true;
+
+      try {
+        const refreshedData = await refreshToken();
+        
+        if (refreshedData) {
+          isRefreshing = false;
+          processQueue(null, refreshedData.access_token);
+          
+          // Retry original request with new token
+          return await makeRequest(refreshedData.access_token);
+        } else {
+          // Refresh failed - logout
+          isRefreshing = false;
+          processQueue(new Error("Token refresh failed"), null);
+          logout();
+          window.location.href = "/signin";
+          return { status: 401, data: { message: "Session expired. Please log in again." } };
+        }
+      } catch (error) {
+        isRefreshing = false;
+        processQueue(error, null);
+        logout();
+        window.location.href = "/signin";
+        return { status: 401, data: { message: "Session expired. Please log in again." } };
+      }
+    } else {
+      // If already refreshing, wait for it to complete
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      })
+        .then((token) => makeRequest(token as string))
+        .catch((err) => {
+          return { status: 401, data: { message: "Session expired. Please log in again." } };
+        });
+    }
+  }
+
+  return response;
 }
 
 export async function refreshToken() {
@@ -41,3 +113,4 @@ export async function refreshToken() {
 
   return data;
 }
+
