@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import Header from "@/components/Header"; 
 import Footer from "@/components/Footer"; 
 import { Input } from "@/components/ui/input"; 
@@ -11,16 +11,19 @@ import { saveTokens, saveUser } from "@/lib/auth";
 
 const SignIn = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null); 
+  const [successMessage, setSuccessMessage] = useState<string | null>(location.state?.message || null);
 
   const API_URL = "http://localhost:3000";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccessMessage(null);
 
     if (!email || !password) {
       setError("Please enter your email and password.");
@@ -34,7 +37,7 @@ const SignIn = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": import.meta.env.VITE_API_KEY, // ⬅ IMPORTANT
+          "x-api-key": import.meta.env.VITE_API_KEY,
         },
         body: JSON.stringify({ email, password }),
       });
@@ -50,12 +53,6 @@ const SignIn = () => {
         setError(data.message || "Invalid email or password.");
         return;
       }
-
-      // email verification check, for now it is desabled 
-      // if (data.user.role === "customer" && !data.user.emailVerified) {
-      //   setError("Please verify your email before logging in.");
-      //   return;
-      // }
 
       saveTokens(data.access_token, data.refresh_token);
       saveUser(data.user);
@@ -81,6 +78,13 @@ const SignIn = () => {
             Welcome back! Sign in to access your car rental management system.
           </p>
           <form onSubmit={handleSubmit} className="space-y-4">
+
+            {/* Success Message Display Logic */}
+            {successMessage && (
+              <div className="bg-green-500/20 text-green-300 p-3 rounded-lg text-sm text-center border border-green-500/30">
+                {successMessage}
+              </div>
+            )}
 
             {/* Error Display Logic */}
             {error && (
