@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
+import VerifyEmail from "./pages/VerifyEmail";
 import Vehicles from "./pages/Vehicles";
 import CarDetails from "./pages/CarDetails";
 import About from "./pages/About";
@@ -36,6 +37,7 @@ const App = () => (
           {/* Auth pages */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
 
           {/* Protected pages */}
           <Route
