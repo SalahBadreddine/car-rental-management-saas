@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import heroCar from "@/assets/car_home.png"; 
 import traceCar from "@/assets/car_trace.png"; 
 import HeroBackground from "@/components/HeroBackground"; 
-import { saveTokens, saveUser } from "@/lib/auth"; // Utility functions for saving tokens/user
 import { Checkbox } from "@/components/ui/checkbox";
 
 const SignUp = () => {
@@ -83,10 +82,20 @@ const SignUp = () => {
         return;
       }
 
-      saveTokens(data.access_token, data.refresh_token);
-      saveUser(data.user);
-
-      navigate("/", { replace: true });
+      // Check emailVerified flag in response
+      if (data.emailVerified === false) {
+        // Customer signup - email verification required
+        navigate("/signin", { 
+          replace: true,
+          state: { message: "Registration successful! Please check your email to verify your account before logging in." }
+        });
+      } else {
+        // Admin signup (auto-verified) - should not happen for regular customers
+        navigate("/signin", { 
+          replace: true,
+          state: { message: "Registration successful! You can now log in." }
+        });
+      }
 
     } catch (err) {
       console.error(err);
