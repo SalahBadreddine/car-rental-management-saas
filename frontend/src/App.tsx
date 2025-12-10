@@ -15,6 +15,9 @@ import ConfirmationCode from "./pages/ConfirmationCode";
 import ReservationConfirmation from "./pages/ReservationConfirmation";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import Profile from "./pages/Profile";
+import EditProfile from "./pages/EditProfile";
+import RentalPolicy from "./pages/RentalPolicy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +41,9 @@ const App = () => (
           <Route path="/rent/confirmation" element={<ReservationConfirmation />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/edit" element={<EditProfile />} />
+          <Route path="/rental-policy" element={<RentalPolicy />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
