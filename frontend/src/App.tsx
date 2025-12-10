@@ -1,24 +1,48 @@
-import React from 'react';
-// Note: We are removing the import of './App.css' and the default logo,
-// since we will be using Tailwind CSS for styling.
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Index from "./pages/Index";
+import SignIn from "./pages/SignIn";
+import SignUp from "./pages/SignUp";
+import Vehicles from "./pages/Vehicles";
+import CarDetails from "./pages/CarDetails";
+import CompareCars from "./pages/CompareCars";
+import RentCar from "./pages/RentCar";
+import Payment from "./pages/Payment";
+import ConfirmationCode from "./pages/ConfirmationCode";
+import ReservationConfirmation from "./pages/ReservationConfirmation";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import NotFound from "./pages/NotFound";
 
-const App: React.FC = () => {
-  return (
-    // We use Tailwind classes here for a clean, centered layout
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="text-center p-8 bg-white shadow-xl rounded-xl max-w-lg w-full">
-        <h1 className="text-4xl font-extrabold text-indigo-700 mb-4">
-          Car Management System
-        </h1>
-        <p className="text-gray-600 text-lg">
-          Frontend Structure Initialized (TypeScript & Tailwind Ready)
-        </p>
-        <p className="mt-6 text-sm text-gray-400">
-          Start building by editing <code>src/App.tsx</code>
-        </p>
-      </div>
-    </div>
-  );
-};
+const queryClient = new QueryClient();
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/vehicles" element={<Vehicles />} />
+          <Route path="/vehicles/:id" element={<CarDetails />} />
+          <Route path="/compare" element={<CompareCars />} />
+          <Route path="/rent/:id" element={<RentCar />} />
+          <Route path="/rent/payment" element={<Payment />} />
+          <Route path="/rent/confirm-code" element={<ConfirmationCode />} />
+          <Route path="/rent/confirmation" element={<ReservationConfirmation />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;
