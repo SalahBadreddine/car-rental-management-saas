@@ -110,6 +110,12 @@ const SignIn = () => {
               required
             />
 
+            <div className="flex justify-end">
+              <Link to="/forgot-password" className="text-sm text-primary hover:text-primary/80 transition-colors">
+                Forgot password?
+              </Link>
+            </div>
+
             <Button
               type="submit"
               className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg"

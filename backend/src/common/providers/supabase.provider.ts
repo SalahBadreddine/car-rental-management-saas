@@ -11,7 +11,13 @@ export const SupabaseClientProvider = {
       throw new Error('Missing Supabase environment variables');
     }
 
-    return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    });
   },
 };
 
