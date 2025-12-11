@@ -1,15 +1,19 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Link, useNavigate } from "react-router-dom";
+import Header from "@/components/Header"; 
+import Footer from "@/components/Footer"; 
+import { Input } from "@/components/ui/input"; 
+import { Button } from "@/components/ui/button"; 
+import heroCar from "@/assets/car_home.png"; 
+import traceCar from "@/assets/car_trace.png"; 
+import HeroBackground from "@/components/HeroBackground"; 
 import { Checkbox } from "@/components/ui/checkbox";
-import heroCar from "@/assets/car_home.png";
-import traceCar from "@/assets/car_trace.png";
-import HeroBackground from "@/components/HeroBackground";
 
 const SignUp = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false); // State for loading
+  const [error, setError] = useState<string | null>(null); // State for error messages
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -19,177 +23,229 @@ const SignUp = () => {
     termsAccepted: false,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle sign up logic
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
+
+  // Helper for Checkbox component as it has a different signature
+  const handleCheckboxChange = (checked: boolean) => {
+    setFormData((prev) => ({ ...prev, termsAccepted: checked }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    if (!formData.name || !formData.email || !formData.password || !formData.phone) {
+      setError("Please fill in all required fields.");
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.termsAccepted) {
+      setError("You must accept the terms.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("http://localhost:3000/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": import.meta.env.VITE_API_KEY, 
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          fullName: formData.name,
+          phoneNumber: formData.phone,
+          address: formData.address || null,
+          role: "customer",
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!data) {
+        setError("Invalid server response.");
+        return;
+      }
+
+      if (!res.ok) {
+        setError(data.message || "Registration failed.");
+        return;
+      }
+
+      // Check emailVerified flag in response
+      if (data.emailVerified === false) {
+        // Customer signup - email verification required
+        navigate("/signin", { 
+          replace: true,
+          state: { message: "Registration successful! Please check your email to verify your account before logging in." }
+        });
+      } else {
+        // Admin signup (auto-verified) - should not happen for regular customers
+        navigate("/signin", { 
+          replace: true,
+          state: { message: "Registration successful! You can now log in." }
+        });
+      }
+
+    } catch (err) {
+      console.error(err);
+      setError("An unexpected error occurred.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      
-      <main className="flex-1 flex items-center justify-center">
-        <HeroBackground trace={traceCar} car={heroCar}>
-          <div className="absolute inset-0 bg-gradient-to-r from-hero-bg via-hero-bg/95 to-transparent" />
+      <HeroBackground trace={traceCar} car={heroCar}>
+        <div className="max-w-lg w-full p-8 bg-white/10 backdrop-blur-sm rounded-xl shadow-2xl space-y-6">
+          <h2 className="text-3xl font-bold text-center text-white">Sign Up</h2>
+          <p className="text-center text-white/70">
+            Join RentoGo today to access exclusive car rental deals!
+          </p>
+          <form onSubmit={handleSubmit} className="space-y-4">
             
-            <div className="relative z-10 p-8 md:p-16 min-h-[700px] flex items-center">
-              <div className="w-full max-w-md">
-                <div className="bg-form-bg/70 backdrop-blur-sm rounded-2xl p-8 shadow-2xl">
-                  <h1 className="font-heading text-3xl font-bold text-white mb-6">
-                    Get Started Now
-                  </h1>
-                  
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                      <label className="text-white text-sm mb-2 block font-medium">
-                        Name
-                      </label>
-                      <Input
-                        type="text"
-                        placeholder="Enter your name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="bg-white/10 border-white/80 text-white placeholder:text-white/60 focus:border-white/40 h-11"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="text-white text-sm mb-2 block font-medium">
-                        Email address
-                      </label>
-                      <Input
-                        type="email"
-                        placeholder="Enter your email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="bg-white/10 border-white/80 text-white placeholder:text-white/60 focus:border-white/40 h-11"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="text-white text-sm mb-2 block font-medium">
-                        Password
-                      </label>
-                      <Input
-                        type="password"
-                        placeholder="password"
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        className="bg-white/10 border-white/80 text-white placeholder:text-white/60 focus:border-white/40 h-11"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="text-white text-sm mb-2 block font-medium">
-                        Phone
-                      </label>
-                      <Input
-                        type="tel"
-                        placeholder="+29 00 00 00 00 00"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="bg-white/10 border-white/80 text-white placeholder:text-white/60 focus:border-white/40 h-11"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="text-white text-sm mb-2 block font-medium">
-                        Address
-                      </label>
-                      <Input
-                        type="text"
-                        placeholder="Address"
-                        value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        className="bg-white/10 border-white/80 text-white placeholder:text-white/60 focus:border-white/40 h-11"
-                      />
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="terms"
-                        checked={formData.termsAccepted}
-                        onCheckedChange={(checked) => 
-                          setFormData({ ...formData, termsAccepted: checked as boolean })
-                        }
-                        className="border-white/40 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                      />
-                      <label htmlFor="terms" className="text-white text-sm">
-                        I agree to the terms & policy
-                      </label>
-                    </div>
-                    
-                    <Button
-                      type="submit"
-                      className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base rounded-lg"
-                    >
-                      Sign up
-                    </Button>
-                  </form>
-                  
-                  <div className="mt-4 text-center text-sm text-white/90">
-                    <span>Have an account? </span>
-                    <Link to="/signin" className="text-primary font-semibold hover:underline">
-                      Sign in
-                    </Link>
-                  </div>
-                  
-                  <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-white/30"></div>
-                    </div>
-                    <div className="relative flex justify-center text-xs">
-                      <span className="bg-form-bg px-2 text-white/70">OR</span>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full h-11 bg-white/10 border-white/80 text-white hover:bg-white/20 rounded-lg"
-                    >
-                      <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                        <path
-                        fill="#4285F4" 
-                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                      />
-                      <path
-                        fill="#34A853" 
-                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                      />
-                      <path
-                        fill="#FBBC05" 
-                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                      />
-                      <path
-                        fill="#EA4335"
-                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                      />
-                      </svg>
-                      Sign in with Google
-                    </Button>
-                    
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full h-11 bg-white/10 border-white/80 text-white hover:bg-white/20 rounded-lg"
-                    >
-                      <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                        <path
-                          fill="#1877F2"
-                          d="M14 13.5h2.5l1-4H14v-2c0-1.54 0-2.5 2.75-2.5h3.15V.51C19.78.36 17.58 0 16 0c-3.8 0-6.2 2.3-6.2 6.95V9.5H7.5v4h2.5V24h5V13.5z"
-                        />
-                      </svg>
-                      Sign in with Facebook
-                    </Button>
-                  </div>
-                </div>
+            {/* Error Display Logic */}
+            {error && (
+              <div className="bg-red-500/20 text-red-300 p-3 rounded-lg text-sm text-center">
+                {error}
               </div>
+            )}
+
+            <Input
+              type="text"
+              name="name"
+              placeholder="Full Name"
+              value={formData.name}
+              onChange={handleChange}
+              className="bg-white/10 border-white/80 text-white placeholder:text-white/70 focus:ring-primary"
+              required
+            />
+            <Input
+              type="email"
+              name="email"
+              placeholder="Email Address"
+              value={formData.email}
+              onChange={handleChange}
+              className="bg-white/10 border-white/80 text-white placeholder:text-white/70 focus:ring-primary"
+              required
+            />
+            <Input
+              type="password"
+              name="password"
+              placeholder="Password (min 8 characters)"
+              value={formData.password}
+              onChange={handleChange}
+              className="bg-white/10 border-white/80 text-white placeholder:text-white/70 focus:ring-primary"
+              required
+            />
+            <Input
+              type="tel"
+              name="phone"
+              placeholder="Phone Number (e.g., +1234567890)"
+              value={formData.phone}
+              onChange={handleChange}
+              className="bg-white/10 border-white/80 text-white placeholder:text-white/70 focus:ring-primary"
+              required
+            />
+            <Input
+              type="text"
+              name="address"
+              placeholder="Address (Optional)"
+              value={formData.address}
+              onChange={handleChange}
+              className="bg-white/10 border-white/80 text-white placeholder:text-white/70 focus:ring-primary"
+            />
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="terms"
+                name="termsAccepted"
+                checked={formData.termsAccepted}
+                onCheckedChange={handleCheckboxChange}
+                className="border-white/80 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+              />
+              <label htmlFor="terms" className="text-sm font-medium leading-none text-white/90 peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                I agree to the <span className="text-primary hover:text-primary/80 cursor-pointer">Terms and Policy</span>
+              </label>
             </div>
-        </HeroBackground>
-      </main>
-      
+
+
+            <Button
+              type="submit"
+              className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg"
+              disabled={loading}
+            >
+              {loading ? "Signing Up..." : "Sign Up"}
+            </Button>
+          </form>
+
+          <div className="text-center text-white/70">
+            Already have an account?{" "}
+            <Link to="/signin" className="text-primary hover:text-primary/80 font-semibold">
+              Sign In
+            </Link>
+          </div>
+
+          <div className="flex items-center justify-center space-x-2">
+            <span className="h-px w-full bg-white/50"></span>
+            <span className="text-white/70 text-sm">or</span>
+            <span className="h-px w-full bg-white/50"></span>
+          </div>
+          
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-11 bg-white/10 border-white/80 text-white hover:bg-white/20 rounded-lg"
+          >
+            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4" 
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853" 
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05" 
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+              />
+              <path
+                fill="#EA4335" 
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              />
+            </svg>
+            Sign up with Google
+          </Button>
+          
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-11 bg-white/10 border-white/80 text-white hover:bg-white/20 rounded-lg"
+          >
+            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M12 2C6.48 2 2 6.48 2 12c0 4.97 3.61 9.1 8.34 9.87v-7H7.9v-2.87h2.44V9.66c0-2.42 1.46-3.75 3.64-3.75 1.04 0 2.21.18 2.21.18v2.42h-1.25c-1.2 0-1.57.75-1.57 1.51v1.85h2.72l-.43 2.87h-2.29v7.02C18.39 21.1 22 16.97 22 12c0-5.52-4.48-10-10-10z"
+              />
+            </svg>
+            Sign up with Facebook
+          </Button>
+        </div>
+      </HeroBackground>
       <Footer />
     </div>
   );

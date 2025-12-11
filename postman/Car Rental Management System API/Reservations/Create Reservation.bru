@@ -1,0 +1,28 @@
+meta {
+  name: Create Reservation
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/reservations
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "carId": "CAR_ID_HERE",
+    "startDate": "2024-01-01T00:00:00Z",
+    "endDate": "2024-01-07T00:00:00Z"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

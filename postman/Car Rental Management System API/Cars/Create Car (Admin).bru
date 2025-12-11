@@ -1,0 +1,31 @@
+meta {
+  name: Create Car (Admin)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/cars
+  body: multipartForm
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+body:multipart-form {
+  make: Toyota
+  model: Camry
+  year: 2024
+  licensePlate: 123-ABC
+  category: Sedan
+  pricePerDay: 50
+  primaryImage: @file()
+  galleryImages: @file()
+  locationId: LOCATION_ID
+}
+
+settings {
+  encodeUrl: true
+}
