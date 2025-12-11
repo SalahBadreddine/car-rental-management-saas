@@ -40,7 +40,89 @@ GET /tenants/by-slug/luxe-cars
 
 ---
 
-### 2. Get My Tenant (Admin)
+### 2. Initialize Tenant (New Admin)
+**`POST /tenants`**
+
+Criteria a new tenant for a newly registered admin user. This also links the admin user to the created tenant.
+
+**Authentication:** Required (Bearer Token)
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Body (JSON):**
+```json
+{
+  "name": "My Rental Co",
+  "slug": "my-rentals",
+  "contactEmail": "admin@example.com",
+  "phoneNumber": "1234567890" // Optional
+}
+```
+
+**Success Response (201):**
+```json
+{
+  "id": "new-tenant-uuid",
+  "name": "My Rental Co",
+  "slug": "my-rentals",
+  "contact_email": "admin@example.com",
+  "phone_number": "1234567890",
+  "logo_url": null,
+  "subscription_status": "active"
+}
+```
+
+**Error Responses:**
+- `400 Bad Request` - Validation error
+- `500 Internal Server Error` - Slug already exists or database error
+
+---
+
+---
+
+### 3. List All Tenants (Admin)
+**`GET /tenants`**
+
+Retrieves a list of all tenants. Useful for super-admins or directory listing.
+
+**Authentication:** Required (Bearer Token)
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Success Response (200):**
+```json
+[
+  {
+    "id": "tenant-uuid-1",
+    "name": "Luxe Cars Oran",
+    "slug": "luxe-cars",
+    "logo_url": "...",
+    "contact_email": "...",
+    "phone_number": "..."
+  },
+  {
+    "id": "tenant-uuid-2",
+    "name": "Another Rental",
+    "slug": "another-rental",
+    ...
+  }
+]
+```
+
+**Error Responses:**
+- `401 Unauthorized` - Invalid token
+- `500 Internal Server Error` - Database error
+
+---
+
+### 4. Get My Tenant (Admin)
 **`GET /tenants/me`**
 
 Retrieves the complete tenant information for the authenticated agency owner, including private fields like `subscription_status`.
@@ -96,6 +178,7 @@ Content-Type: multipart/form-data (or application/json)
 
 **Form Fields (multipart/form-data):**
 - `name` (string, optional) - Agency name
+- `slug` (string, optional) - URL identifier (must be unique)
 - `contactEmail` (string, optional, email format) - Contact email address
 - `phoneNumber` (string, optional) - Phone number
 - `file` (file, optional) - Logo image file (JPG, PNG, etc.) - If provided, will be uploaded to R2 and `logoUrl` will be set automatically
@@ -104,6 +187,7 @@ Content-Type: multipart/form-data (or application/json)
 ```json
 {
   "name": "Luxe Cars Oran Updated",
+  "slug": "luxe-cars-updated",
   "contactEmail": "newemail@luxecars.com",
   "phoneNumber": "+213555999999"
 }
@@ -119,6 +203,7 @@ Content-Type: multipart/form-data (or application/json)
 PATCH /tenants/me
 Body: form-data
   - name: Luxe Cars Oran Updated
+  - slug: luxe-cars-updated
   - contactEmail: newemail@luxecars.com
   - phoneNumber: +213555999999
   - file: [Select Logo Image File]

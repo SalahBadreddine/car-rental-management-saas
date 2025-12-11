@@ -1,8 +1,9 @@
-import { Controller, Get, Param, Patch, Body, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Body, UseGuards, UseInterceptors, UploadedFile, BadRequestException, Post } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { TenantsService } from './tenants.service';
 import { TenantResponseDto } from './dto/tenant-response.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
+import { CreateTenantDto } from './dto/create-tenant.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { StorageService } from '../storage/storage.service';
@@ -14,6 +15,23 @@ export class TenantsController {
     private readonly tenantsService: TenantsService,
     private readonly storageService: StorageService,
   ) {}
+
+  @Post()
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  async create(
+    @Body() createTenantDto: CreateTenantDto,
+    @CurrentUser() user: any,
+    @UploadedFile() file?: R2UploadedFile,
+  ) {
+    return this.tenantsService.create(createTenantDto, user.id, file);
+  }
+
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  async findAll() {
+    return this.tenantsService.findAll();
+  }
 
   @Get('by-slug/:slug')
   async findBySlug(@Param('slug') slug: string): Promise<TenantResponseDto> {
@@ -61,4 +79,3 @@ export class TenantsController {
     return this.tenantsService.update(user.tenant_id, updateTenantDto);
   }
 }
-
