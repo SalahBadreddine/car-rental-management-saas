@@ -35,6 +35,18 @@ const Header = () => {
               >
                 Vehicles
               </Link>
+              
+              {userLoggedIn && (
+                <Link
+                  to="/profile"
+                  className={`font-medium transition-colors ${
+                    isActive("/profile") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Profile
+                </Link>
+              )}
+
               <Link
                 to="/about"
                 className={`font-medium transition-colors ${

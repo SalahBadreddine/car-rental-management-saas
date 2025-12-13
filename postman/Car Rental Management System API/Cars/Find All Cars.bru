@@ -1,0 +1,22 @@
+meta {
+  name: Find All Cars
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/cars?tenantId={{tenantId}}&category=Sedan&status=available
+  body: none
+  auth: inherit
+}
+
+params:query {
+  tenantId: {{tenantId}}
+  category: Sedan
+  status: available
+  ~locationId: LOCATION_ID
+}
+
+settings {
+  encodeUrl: true
+}

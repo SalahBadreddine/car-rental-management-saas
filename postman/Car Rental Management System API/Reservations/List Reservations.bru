@@ -1,0 +1,19 @@
+meta {
+  name: List Reservations
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/reservations
+  body: none
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+settings {
+  encodeUrl: true
+}

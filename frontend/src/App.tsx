@@ -7,10 +7,20 @@ import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import VerifyEmail from "./pages/VerifyEmail";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Vehicles from "./pages/Vehicles";
 import CarDetails from "./pages/CarDetails";
+import CompareCars from "./pages/CompareCars";
+import RentCar from "./pages/RentCar";
+import Payment from "./pages/Payment";
+import ConfirmationCode from "./pages/ConfirmationCode";
+import ReservationConfirmation from "./pages/ReservationConfirmation";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import Profile from "./pages/Profile";
+import EditProfile from "./pages/EditProfile";
+import RentalPolicy from "./pages/RentalPolicy";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -38,6 +48,8 @@ const App = () => (
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Protected pages */}
           <Route
@@ -58,6 +70,12 @@ const App = () => (
             }
           />
 
+          <Route path="/compare" element={<CompareCars />} />
+          <Route path="/rent/:id" element={<RentCar />} />
+          <Route path="/rent/payment" element={<Payment />} />
+          <Route path="/rent/confirm-code" element={<ConfirmationCode />} />
+          <Route path="/rent/confirmation" element={<ReservationConfirmation />} />
+
           <Route
             path="/about"
             element={
@@ -75,6 +93,10 @@ const App = () => (
               </ProtectedRoute>
             }
           />
+
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/edit" element={<EditProfile />} />
+          <Route path="/rental-policy" element={<RentalPolicy />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -12,6 +12,7 @@ export interface Car {
   year?: number;
   mileage?: number;
   color?: string;
+  location?: string;
 }
 
 export type CarType = "Cabriolet" | "Pickup" | "Sedan" | "SUV" | "Minivan" | "Sport" | "Van";
@@ -22,5 +23,6 @@ export interface CarFilters {
   type: CarType | null;
   startingPrice: number | null;
   endingPrice: number | null;
+  location: string | null;
 }
 

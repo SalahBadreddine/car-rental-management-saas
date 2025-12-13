@@ -1,0 +1,19 @@
+meta {
+  name: List Locations
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/locations?tenantId={{tenantId}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  tenantId: {{tenantId}}
+}
+
+settings {
+  encodeUrl: true
+}
