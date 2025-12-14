@@ -1,0 +1,19 @@
+meta {
+  name: Get My Tenant
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/tenants/me
+  body: none
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Update Status (Admin)
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/reservations/RESERVATION_ID_HERE/status
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "status": "confirmed"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
