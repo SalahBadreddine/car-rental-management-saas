@@ -1,0 +1,20 @@
+meta {
+  name: Find By Slug
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/tenants/by-slug/:slug
+  body: none
+  auth: inherit
+}
+
+params:path {
+  slug: 
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

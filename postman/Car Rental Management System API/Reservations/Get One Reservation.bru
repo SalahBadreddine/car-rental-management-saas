@@ -1,0 +1,19 @@
+meta {
+  name: Get One Reservation
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/reservations/RESERVATION_ID_HERE
+  body: none
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+settings {
+  encodeUrl: true
+}

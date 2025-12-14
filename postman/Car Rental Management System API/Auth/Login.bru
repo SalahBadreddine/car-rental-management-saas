@@ -1,0 +1,27 @@
+meta {
+  name: Login
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "po7ta@mailna.co",
+    "password": "newpassword123"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

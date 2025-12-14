@@ -1,0 +1,25 @@
+meta {
+  name: Resend Verification Email
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/auth/resend-verification
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "user@example.com"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

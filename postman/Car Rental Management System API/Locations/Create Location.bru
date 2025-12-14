@@ -1,0 +1,27 @@
+meta {
+  name: Create Location
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/locations
+  body: multipartForm
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+body:multipart-form {
+  name: Oran Airport
+  city: Oran
+  address: Parking B
+  file: @file(C:\Users\badro\Downloads\image.png)
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,0 +1,24 @@
+meta {
+  name: Delete Location
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/locations/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 8b66697f-efcd-49f2-bba3-82e5fb55435b
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

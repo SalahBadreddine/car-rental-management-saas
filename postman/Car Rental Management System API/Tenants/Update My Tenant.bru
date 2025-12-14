@@ -1,0 +1,28 @@
+meta {
+  name: Update My Tenant
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/tenants/me
+  body: multipartForm
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+body:multipart-form {
+  name: New Name test
+  file: @file(C:\Users\badro\Downloads\study.ico)
+  slug: new-slug
+  phoneNumber: 0596239467
+  ~contactEmail: new@tenant.com
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
