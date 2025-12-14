@@ -1,0 +1,28 @@
+meta {
+  name: Create Tenant (Initialize)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/tenants
+  body: multipartForm
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+  Content-Type: application/json
+}
+
+body:multipart-form {
+  name: My Rental Company
+  slug: my-rentals
+  contactEmail: admin@myrentals.com
+  phoneNumber: 1234567890
+  file: @file()
+}
+
+settings {
+  encodeUrl: true
+}

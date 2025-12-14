@@ -1,0 +1,24 @@
+meta {
+  name: Update Car (Admin)
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/cars/CAR_ID_HERE
+  body: multipartForm
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+body:multipart-form {
+  pricePerDay: 60
+  primaryImage: @file()
+}
+
+settings {
+  encodeUrl: true
+}
