@@ -98,7 +98,7 @@ const Vehicles = () => {
   }
 
   const handleViewDetails = (carId: number) => {
-    navigate(`/vehiclesClient/${carId}`)
+    navigate(`/client/vehicles/${carId}`)
   }
 
   return (

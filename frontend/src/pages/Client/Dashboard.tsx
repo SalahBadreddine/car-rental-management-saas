@@ -1,4 +1,6 @@
-import { Link } from "react-router-dom"
+"use client"
+
+import { Link, useNavigate } from "react-router-dom"
 import Header from "@/components/Client/Header"
 import Footer from "@/components/Footer"
 import { Card } from "@/components/ui/card"
@@ -43,12 +45,19 @@ const brandData = [
 ]
 
 const recentBookings = [
-  { car: "BMW 5 Series", customer: "John Smith", price: "$720", days: "4 Days", status: "not returned" },
-  { car: "BMW 5 Series", customer: "John Smith", price: "$720", days: "4 Days", status: "returned" },
-  { car: "BMW 5 Series", customer: "John Smith", price: "$720", days: "4 Days", status: "ongoing" },
-  { car: "BMW 5 Series", customer: "John Smith", price: "$720", days: "4 Days", status: "returned" },
-  { car: "BMW 5 Series", customer: "John Smith", price: "$720", days: "4 Days", status: "returned" },
-  { car: "BMW 5 Series", customer: "John Smith", price: "$720", days: "4 Days", status: "confirmed" },
+  {
+    id: "#RES-12345",
+    car: "BMW 5 Series",
+    customer: "John Smith",
+    price: "$720",
+    days: "4 Days",
+    status: "not returned",
+  },
+  { id: "#RES-12346", car: "BMW 5 Series", customer: "John Smith", price: "$720", days: "4 Days", status: "returned" },
+  { id: "#RES-12347", car: "BMW 5 Series", customer: "John Smith", price: "$720", days: "4 Days", status: "ongoing" },
+  { id: "#RES-12348", car: "BMW 5 Series", customer: "John Smith", price: "$720", days: "4 Days", status: "returned" },
+  { id: "#RES-12349", car: "BMW 5 Series", customer: "John Smith", price: "$720", days: "4 Days", status: "returned" },
+  { id: "#RES-12350", car: "BMW 5 Series", customer: "John Smith", price: "$720", days: "4 Days", status: "confirmed" },
 ]
 
 const mostRentedCars = [
@@ -59,6 +68,16 @@ const mostRentedCars = [
 ]
 
 export default function ClientDashboard() {
+  const navigate = useNavigate()
+
+  const handleViewReservationDetails = (reservationId: string) => {
+    navigate(`/client/reservations/${reservationId.replace("#", "")}`)
+  }
+
+  const handleViewVehicleDetails = (vehicleId: number) => {
+    navigate(`/client/vehicles/${vehicleId}`)
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
@@ -338,7 +357,12 @@ export default function ClientDashboard() {
                 >
                   {booking.status}
                 </span>
-                <Button variant="outline" size="sm" className="min-w-[80px] bg-transparent">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="min-w-[80px] bg-transparent"
+                  onClick={() => handleViewReservationDetails(booking.id)}
+                >
                   Details
                 </Button>
               </div>
@@ -372,7 +396,12 @@ export default function ClientDashboard() {
                 <span className="w-1 h-1 bg-muted-foreground rounded-full" />
                 <Wind className="w-3 h-3" />
               </div>
-              <Button className="w-full bg-gray-600 hover:bg-gray-700 text-white text-sm">View Details</Button>
+              <Button
+                onClick={() => handleViewVehicleDetails(car.id)}
+                className="w-full bg-gray-600 hover:bg-gray-700 text-white text-sm"
+              >
+                View Details
+              </Button>
             </Card>
           ))}
         </div>

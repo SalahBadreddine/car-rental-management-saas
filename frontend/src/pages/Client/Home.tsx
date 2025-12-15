@@ -13,12 +13,48 @@ import CarCard from "@/components/CarCard"
 import { ReservationRow } from "@/components/Client/ReservationRow"
 
 const recentReservations = [
-  { carName: "BMW 5 Series", customerName: "John Smith", days: "-4 Days", status: "ongoing" as const },
-  { carName: "Toyota", customerName: "Karim", days: "-4 Days", status: "ongoing" as const },
-  { carName: "Ford Fiesta", customerName: "Arthur", days: "-2 Days", status: "ongoing" as const },
-  { carName: "Camaro SS", customerName: "John Smith", days: "+5 Days", status: "confirmed" as const },
-  { carName: "BMW 5 Series", customerName: "John Smith", days: "+8 Days", status: "confirmed" as const },
-  { carName: "BMW 5 Series", customerName: "John Smith", days: "+8 Days", status: "confirmed" as const },
+  {
+    carName: "BMW 5 Series",
+    customerName: "John Smith",
+    days: "-4 Days",
+    status: "ongoing" as const,
+    reservationId: "#RES-12345",
+  },
+  {
+    carName: "Toyota",
+    customerName: "Karim",
+    days: "-4 Days",
+    status: "ongoing" as const,
+    reservationId: "#RES-12346",
+  },
+  {
+    carName: "Ford Fiesta",
+    customerName: "Arthur",
+    days: "-2 Days",
+    status: "ongoing" as const,
+    reservationId: "#RES-12347",
+  },
+  {
+    carName: "Camaro SS",
+    customerName: "John Smith",
+    days: "+5 Days",
+    status: "confirmed" as const,
+    reservationId: "#RES-12348",
+  },
+  {
+    carName: "BMW 5 Series",
+    customerName: "John Smith",
+    days: "+8 Days",
+    status: "confirmed" as const,
+    reservationId: "#RES-12349",
+  },
+  {
+    carName: "BMW 5 Series",
+    customerName: "John Smith",
+    days: "+8 Days",
+    status: "confirmed" as const,
+    reservationId: "#RES-12350",
+  },
 ]
 
 export default function ClientHome() {
@@ -131,9 +167,9 @@ export default function ClientHome() {
             className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 p-10"
             style={{ backgroundColor: "rgba(27, 26, 26, 0.23)" }}
           >
-            <CarCard image={fordFiesta} name="Ford Fiesta" price="20" />
-            <CarCard image={bmwM2} name="Bmw M2" price="80" />
-            <CarCard image={toyota} name="Camaro SS" price="120" />
+            <CarCard image={fordFiesta} name="Ford Fiesta" price="20" carId={1} />
+            <CarCard image={bmwM2} name="Bmw M2" price="80" carId={2} />
+            <CarCard image={toyota} name="Camaro SS" price="120" carId={3} />
           </div>
 
           <div className="text-center">
@@ -175,9 +211,9 @@ export default function ClientHome() {
             className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 p-10"
             style={{ backgroundColor: "rgba(27, 26, 26, 0.23)" }}
           >
-            <CarCard image={fordFiesta} name="Ford Fiesta" price="20" />
-            <CarCard image={bmwM2} name="Bmw M2" price="80" />
-            <CarCard image={toyota} name="Camaro SS" price="120" />
+            <CarCard image={fordFiesta} name="Ford Fiesta" price="20" carId={1} />
+            <CarCard image={bmwM2} name="Bmw M2" price="80" carId={2} />
+            <CarCard image={toyota} name="Camaro SS" price="120" carId={3} />
           </div>
 
           <div className="text-center">

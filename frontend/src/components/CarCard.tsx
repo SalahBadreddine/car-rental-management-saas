@@ -1,30 +1,41 @@
-import { Button } from "@/components/ui/button";
+"use client"
 
-const CarCard = ({ image, name, price }) => {
+import { Button } from "@/components/ui/button"
+import { useNavigate } from "react-router-dom"
+
+const CarCard = ({ image, name, price, carId = 1 }: { image: string; name: string; price: string; carId?: number }) => {
+  const navigate = useNavigate()
+
+  const handleBookNow = () => {
+    navigate(`/client/vehicles/${carId}`)
+  }
+
   return (
     <div className="car-card-wrapper">
-      
       <div className="car-card">
         <div className="car-card-content">
           <div className="car-image-container -translate-y-12">
-            <img src={image} alt={name} className="car-image" />
+            <img src={image || "/placeholder.svg"} alt={name} className="car-image" />
           </div>
-          
+
           <h3 className="car-name">{name}</h3>
-          
+
           <div className="car-price">
             <span className="price-text">From ${price}</span>
           </div>
-          
+
           <div className="car-button-container">
-            <Button className="bg-red-600 hover:bg-red-700 text-white font-semibold p-7 rounded-lg text-base shadow-lg transition-all translate-y-12">
+            <Button
+              onClick={handleBookNow}
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold p-7 rounded-lg text-base shadow-lg transition-all translate-y-12"
+            >
               Book now
             </Button>
           </div>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default CarCard;
+export default CarCard

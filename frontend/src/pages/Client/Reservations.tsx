@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import Header from "@/components/Client/Header"
 import Footer from "@/components/Footer"
 import { Button } from "@/components/ui/button"
@@ -183,6 +184,7 @@ const mockReservations: Reservation[] = [
 export default function ClientReservations() {
   const [filter, setFilter] = useState<ReservationStatus>("all")
   const [searchQuery, setSearchQuery] = useState("")
+  const navigate = useNavigate()
 
   const filteredReservations = mockReservations.filter((reservation) => {
     if (filter !== "all") {
@@ -206,6 +208,10 @@ export default function ClientReservations() {
   const ongoingReservations = filteredReservations.filter((r) => r.status === "ongoing")
   const confirmedReservations = filteredReservations.filter((r) => r.status === "confirmed")
   const previousReservations = filteredReservations.filter((r) => r.status === "returned")
+
+  const handleViewDetails = (reservationId: string) => {
+    navigate(`/client/reservations/${reservationId.replace("#", "")}`)
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -307,7 +313,9 @@ export default function ClientReservations() {
                   <div className="flex items-center gap-3">
                     <p className="font-medium">{reservation.id}</p>
                     <Button className="bg-[#DC2626] hover:bg-[#B71C1C]">Confirm</Button>
-                    <Button variant="outline">Details</Button>
+                    <Button variant="outline" onClick={() => handleViewDetails(reservation.id)}>
+                      Details
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -339,7 +347,9 @@ export default function ClientReservations() {
                   <div className="flex items-center gap-3">
                     <p className="font-medium">{reservation.id}</p>
                     <Button className="bg-[#DC2626] hover:bg-[#B71C1C]">Ongoing</Button>
-                    <Button variant="outline">Details</Button>
+                    <Button variant="outline" onClick={() => handleViewDetails(reservation.id)}>
+                      Details
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -371,7 +381,9 @@ export default function ClientReservations() {
                   <div className="flex items-center gap-3">
                     <p className="font-medium">{reservation.id}</p>
                     <Button className="bg-[#DC2626] hover:bg-[#B71C1C]">Confirmed</Button>
-                    <Button variant="outline">Details</Button>
+                    <Button variant="outline" onClick={() => handleViewDetails(reservation.id)}>
+                      Details
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -408,7 +420,9 @@ export default function ClientReservations() {
                   </div>
                   <div className="flex items-center gap-3">
                     <p className="font-medium">{reservation.id}</p>
-                    <Button variant="outline">Details</Button>
+                    <Button variant="outline" onClick={() => handleViewDetails(reservation.id)}>
+                      Details
+                    </Button>
                   </div>
                 </div>
               ))}
