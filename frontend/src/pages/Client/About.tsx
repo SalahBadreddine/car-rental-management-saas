@@ -1,17 +1,17 @@
-import { Link } from "react-router-dom";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import HeroBackground from "@/components/HeroBackground";
-import { Button } from "@/components/ui/button";
-import { Users, Car as CarIcon, Headphones } from "lucide-react";
-import heroCar from "@/assets/car_home.png";
-import traceCar from "@/assets/car_trace.png";
+import { Link } from "react-router-dom"
+import Header from "@/components/Client/Header"
+import Footer from "@/components/Footer"
+import HeroBackground from "@/components/HeroBackground"
+import { Button } from "@/components/ui/button"
+import { Users, CarIcon, Headphones } from "lucide-react"
+import heroCar from "@/assets/car_home.png"
+import traceCar from "@/assets/car_trace.png"
 
-const About = () => {
+const ClientAbout = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      
+
       {/* Hero Section */}
       <HeroBackground trace={traceCar} car={heroCar}>
         <div>
@@ -34,7 +34,7 @@ const About = () => {
               More Than Just Transportation
             </h3>
             <p className="text-lg text-muted-foreground leading-relaxed mb-12">
-              RentoGo was founded on the simple principle that renting a car should be easy, transparent, and enjoyable. 
+              RentoGo was founded on the simple principle that renting a car should be easy, transparent, and enjoyable.
               Since 2025, we've grown from a local service to a trusted national brand.
             </p>
 
@@ -45,7 +45,8 @@ const About = () => {
                 </div>
                 <h3 className="font-heading text-xl font-bold mb-3">100% Transparency</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  No hidden fees, no surprises. What you see is what you pay. We believe clear, honest pricing is the only way to do business.
+                  No hidden fees, no surprises. What you see is what you pay. We believe clear, honest pricing is the
+                  only way to do business.
                 </p>
               </div>
 
@@ -55,7 +56,8 @@ const About = () => {
                 </div>
                 <h3 className="font-heading text-xl font-bold mb-3">Modern & Safe Fleet</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Our cars are new, meticulously maintained, and feature the latest safety technology to ensure your peace of mind on the road.
+                  Our cars are new, meticulously maintained, and feature the latest safety technology to ensure your
+                  peace of mind on the road.
                 </p>
               </div>
 
@@ -65,7 +67,8 @@ const About = () => {
                 </div>
                 <h3 className="font-heading text-xl font-bold mb-3">24/7 Support</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  We're here for you whenever you need us. Our dedicated customer support team is available around the clock for assistance.
+                  We're here for you whenever you need us. Our dedicated customer support team is available around the
+                  clock for assistance.
                 </p>
               </div>
             </div>
@@ -79,21 +82,21 @@ const About = () => {
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="font-heading text-4xl md:text-5xl font-bold mb-6">Ready to hit the road?</h2>
             <p className="text-lg text-muted-foreground leading-relaxed mb-8">
-              Whether it's a weekend getaway or a long business trip, we have the perfect vehicle waiting for you. 
+              Whether it's a weekend getaway or a long business trip, we have the perfect vehicle waiting for you.
               Discover the RentoGo difference today.
             </p>
-            <Link to="/vehicles">
+            <Link to="/client/vehicles">
               <Button className="bg-[#D32F2F] hover:bg-[#B71C1C] text-white font-semibold px-8 py-6 text-lg rounded-lg">
-                Use our website
+                View Our Vehicles
               </Button>
             </Link>
           </div>
         </div>
       </section>
-      
+
       <Footer />
     </div>
-  );
-};
+  )
+}
 
-export default About;
+export default ClientAbout
