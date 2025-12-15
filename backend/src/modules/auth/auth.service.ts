@@ -43,7 +43,9 @@ export class AuthService {
       });
 
     if (profileError) {
-      throw new InternalServerErrorException('Failed to create user profile');
+      // ROLLBACK: Delete the auth user if profile creation fails
+      await this.supabase.auth.admin.deleteUser(userId);
+      throw new InternalServerErrorException(`Failed to create user profile: ${profileError.message}`);
     }
 
     if (!shouldAutoConfirm) {

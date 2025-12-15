@@ -3,7 +3,13 @@ import { IsString, IsEmail, IsOptional, IsUrl } from 'class-validator';
 export class UpdateTenantDto {
   @IsString()
   @IsOptional()
+  @IsString()
+  @IsOptional()
   name?: string;
+
+  @IsString()
+  @IsOptional()
+  slug?: string;
 
   @IsEmail()
   @IsOptional()
