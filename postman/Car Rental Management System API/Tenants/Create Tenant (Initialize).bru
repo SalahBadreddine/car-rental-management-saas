@@ -1,40 +1,28 @@
 meta {
   name: Create Tenant (Initialize)
   type: http
-  seq: 4
+  seq: 1
 }
 
 post {
-  url: http://localhost:3000/tenants
+  url: {{baseUrl}}/tenants
   body: multipartForm
   auth: inherit
 }
 
 headers {
   Authorization: Bearer {{accessToken}}
-}
-
-body:json {
-  {
-    "name": "My Rental Co",
-    "slug": "my-rentals", 
-    "contactEmail": "po7ta@mailna.co"
-  }
-  
-  
-  // it returned this id 
-  // 855a30d8-f0f9-4d37-89db-3ae9a105891f
+  Content-Type: application/json
 }
 
 body:multipart-form {
-  name: Testing tenant
-  slug: Carswow auto
-  contactEmail: carswow@gmail.com
-  phoneNumber: 0593931234
-  file: @file(C:\Users\badro\Downloads\study.png)
+  name: My Rental Company
+  slug: my-rentals
+  contactEmail: admin@myrentals.com
+  phoneNumber: 1234567890
+  file: @file()
 }
 
 settings {
   encodeUrl: true
-  timeout: 0
 }

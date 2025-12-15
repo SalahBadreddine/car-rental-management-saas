@@ -1,7 +1,7 @@
 meta {
   name: Update My Tenant
   type: http
-  seq: 3
+  seq: 5
 }
 
 patch {
@@ -15,14 +15,13 @@ headers {
 }
 
 body:multipart-form {
-  name: New Name test
-  file: @file(C:\Users\badro\Downloads\study.ico)
+  name: New Tenant Name
+  contactEmail: new@tenant.com
+  phoneNumber: 0550000000
   slug: new-slug
-  phoneNumber: 0596239467
-  ~contactEmail: new@tenant.com
+  file: @file()
 }
 
 settings {
   encodeUrl: true
-  timeout: 0
 }
