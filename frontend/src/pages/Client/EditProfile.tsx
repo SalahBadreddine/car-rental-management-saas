@@ -5,11 +5,11 @@ import type React from "react"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import Header from "@/components/Client/Header"
-import Footer from "@/components/Footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Phone, Mail, MapPin } from "lucide-react"
+import ClientFooter from "@/components/Client/Footer"
 
 export default function ClientEditProfile() {
   const navigate = useNavigate()
@@ -150,7 +150,7 @@ export default function ClientEditProfile() {
         </Card>
       </main>
 
-      <Footer />
+      <ClientFooter />
     </div>
   )
 }

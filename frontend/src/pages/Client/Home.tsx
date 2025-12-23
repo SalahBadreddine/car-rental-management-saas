@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom"
 import Header from "@/components/Client/Header"
-import Footer from "@/components/Footer"
 import { Button } from "@/components/ui/button"
 import { CarIcon, Users, FileText, Gauge, ArrowRight } from "lucide-react"
 import fordFiesta from "@/assets/ford.png"
@@ -11,6 +10,7 @@ import traceCar from "@/assets/car_trace.png"
 import HeroBackground from "@/components/HeroBackground"
 import CarCard from "@/components/CarCard"
 import { ReservationRow } from "@/components/Client/ReservationRow"
+import ClientFooter from "@/components/Client/Footer"
 
 const recentReservations = [
   {
@@ -229,7 +229,7 @@ export default function ClientHome() {
         </div>
       </section>
 
-      <Footer />
+      <ClientFooter />
     </div>
   )
 }

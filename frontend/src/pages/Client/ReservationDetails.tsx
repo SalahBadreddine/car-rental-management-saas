@@ -3,11 +3,11 @@
 import { useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import Header from "@/components/Client/Header"
-import Footer from "@/components/Footer"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Settings, Fuel, Wind, ChevronDown, Calendar, DollarSign, X, CarIcon } from "lucide-react"
+import ClientFooter from "@/components/Client/Footer"
 
 export default function ReservationDetails() {
   const { id } = useParams()
@@ -243,7 +243,7 @@ export default function ReservationDetails() {
         </div>
       </main>
 
-      <Footer />
+      <ClientFooter />
     </div>
   )
 }

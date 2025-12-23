@@ -3,10 +3,10 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import Header from "@/components/Client/Header"
-import Footer from "@/components/Footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
+import ClientFooter from "@/components/Client/Footer"
 
 type ReservationStatus = "all" | "pending" | "ongoing" | "confirmed" | "old"
 
@@ -444,7 +444,7 @@ export default function ClientReservations() {
         )}
       </main>
 
-      <Footer />
+      <ClientFooter />
     </div>
   )
 }

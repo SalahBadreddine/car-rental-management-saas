@@ -3,13 +3,13 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import Header from "@/components/Client/Header"
-import Footer from "@/components/Footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Settings, Fuel, Wind, Users, Gauge, CarIcon, Check } from "lucide-react"
+import ClientFooter from "@/components/Client/Footer"
 
 export default function AddVehicle() {
   const navigate = useNavigate()
@@ -256,7 +256,7 @@ export default function AddVehicle() {
         </div>
       </main>
 
-      <Footer />
+      <ClientFooter />
     </div>
   )
 }

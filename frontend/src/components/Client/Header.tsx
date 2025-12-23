@@ -2,12 +2,14 @@
 
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import logo from "@/assets/logo.png"
-import { getAccessToken, logout } from "@/lib/auth"
+import { logout } from "@/lib/auth"
+import { useAuth } from "@/contexts/AuthContext"
 import { Bell } from "lucide-react"
 
 const Header = () => {
   const location = useLocation()
   const navigate = useNavigate()
+  const { clearAuth, selectedLocation } = useAuth()
 
   const isActive = (path: string) => {
     if (path === "/client/home" && (location.pathname === "/" || location.pathname === "/client/home")) {
@@ -18,23 +20,30 @@ const Header = () => {
 
   const handleLogout = () => {
     logout()
-    navigate("/signin")
+    clearAuth()
+    navigate("/role-select", { replace: true })
   }
 
-  const userLoggedIn = !!getAccessToken()
-  const hideNav = ["/signin", "/signup"].includes(location.pathname)
+  const hideNav = ["/signin", "/signup", "/role-select"].includes(location.pathname)
 
   return (
     <header className="bg-white/80 backdrop-blur-sm sticky top-0 z-50 border-b">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <Link
-            to="/client/home"
-            className="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity"
-          >
-            <img src={logo || "/placeholder.svg"} alt="Logo" className="h-8" />
-            <span className="font-heading font-bold text-xl">RentoGo</span>
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              to="/client/home"
+              className="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity"
+            >
+              <img src={logo || "/placeholder.svg"} alt="Logo" className="h-8" />
+              <span className="font-heading font-bold text-xl">RentoGo</span>
+            </Link>
+            {selectedLocation && (
+              <span className="text-sm text-muted-foreground px-3 py-1 bg-muted rounded-full">
+                📍 {selectedLocation.charAt(0).toUpperCase() + selectedLocation.slice(1)}
+              </span>
+            )}
+          </div>
 
           {!hideNav && (
             <nav className="hidden md:flex items-center gap-8">
@@ -99,14 +108,9 @@ const Header = () => {
                 </span>
               </Link>
 
-              {userLoggedIn && (
-                <button
-                  onClick={handleLogout}
-                  className="font-medium text-red-500 hover:text-red-600 transition-colors"
-                >
-                  Logout
-                </button>
-              )}
+              <button onClick={handleLogout} className="font-medium text-red-500 hover:text-red-600 transition-colors">
+                Logout
+              </button>
             </nav>
           )}
         </div>

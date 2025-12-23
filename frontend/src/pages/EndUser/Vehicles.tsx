@@ -1,19 +1,23 @@
-import { useState, useMemo, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Settings, Fuel, Wind, X, Search, Car as CarIcon, MapPin, Check } from "lucide-react";
-import { cars, brands, carTypes, locations } from "@/data/cars";
-import { Car, CarFilters } from "@/types/car";
+"use client"
+
+import { useState, useMemo, useEffect } from "react"
+import { useNavigate, useLocation } from "react-router-dom"
+import Header from "@/components/Header"
+import Footer from "@/components/Footer"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Settings, Fuel, Wind, Search, CarIcon, MapPin, Check } from "lucide-react"
+import { cars, brands, carTypes, locations } from "@/data/cars"
+import type { CarFilters } from "@/types/car"
+import { useAuth } from "@/contexts/AuthContext"
 
 const Vehicles = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { user } = useAuth()
+  const [searchQuery, setSearchQuery] = useState("")
+  const [activeFilter, setActiveFilter] = useState<string | null>(null)
   const [filters, setFilters] = useState<CarFilters>({
     search: "",
     brand: null,
@@ -21,93 +25,95 @@ const Vehicles = () => {
     startingPrice: null,
     endingPrice: null,
     location: null,
-  });
+  })
   const [selectedCars, setSelectedCars] = useState<number[]>(() => {
-    const stored = localStorage.getItem("compareCars");
-    return stored ? JSON.parse(stored) : [];
-  });
+    const stored = localStorage.getItem("compareCars")
+    return stored ? JSON.parse(stored) : []
+  })
   const [priceInputs, setPriceInputs] = useState<{ starting: string; ending: string }>({
     starting: "",
     ending: "",
-  });
+  })
 
   const handleFilterChange = (key: keyof CarFilters, value: any, keepOpen = false) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }))
     if (!keepOpen) {
-      setActiveFilter(null);
+      setActiveFilter(null)
     }
-  };
+  }
 
   const filteredCars = useMemo(() => {
     return cars.filter((car) => {
       // Search filter
       if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
+        const searchLower = filters.search.toLowerCase()
         if (
           !car.brand.toLowerCase().includes(searchLower) &&
           !car.type.toLowerCase().includes(searchLower) &&
           !`${car.brand} ${car.type}`.toLowerCase().includes(searchLower)
         ) {
-          return false;
+          return false
         }
       }
 
       // Brand filter
       if (filters.brand && car.brand !== filters.brand) {
-        return false;
+        return false
       }
 
       // Type filter
       if (filters.type && car.type !== filters.type) {
-        return false;
+        return false
       }
 
       // Price range filter
       if (filters.startingPrice && car.price < filters.startingPrice) {
-        return false;
+        return false
       }
       if (filters.endingPrice && car.price > filters.endingPrice) {
-        return false;
+        return false
       }
 
       // Location filter
       if (filters.location && car.location !== filters.location) {
-        return false;
+        return false
       }
 
-      return true;
-    });
-  }, [filters]);
+      return true
+    })
+  }, [filters])
 
   useEffect(() => {
     // Sync with localStorage
-    localStorage.setItem("compareCars", JSON.stringify(selectedCars));
-  }, [selectedCars]);
+    localStorage.setItem("compareCars", JSON.stringify(selectedCars))
+  }, [selectedCars])
 
   const toggleCarSelection = (carId: number) => {
     setSelectedCars((prev) => {
       const newSelection = prev.includes(carId)
         ? prev.filter((id) => id !== carId)
         : prev.length < 4
-        ? [...prev, carId]
-        : prev;
-      return newSelection;
-    });
-  };
+          ? [...prev, carId]
+          : prev
+      return newSelection
+    })
+  }
 
   const handleViewDetails = (carId: number) => {
-    navigate(`/vehicles/${carId}`);
-  };
+    navigate(`/vehicles/${carId}`)
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      
+
       <main className="flex-1 container mx-auto px-4 py-12">
         {/* Page Title */}
         <div className="text-center mb-8">
           <h1 className="font-heading text-4xl md:text-5xl font-bold mb-4 leading-tight">
-            Search for a car and<br />Select a vehicle group
+            Search for a car and
+            <br />
+            Select a vehicle group
           </h1>
         </div>
 
@@ -120,8 +126,8 @@ const Vehicles = () => {
               placeholder="Search a car name, type..."
               value={searchQuery}
               onChange={(e) => {
-                setSearchQuery(e.target.value);
-                handleFilterChange("search", e.target.value);
+                setSearchQuery(e.target.value)
+                handleFilterChange("search", e.target.value)
               }}
               className="w-full pl-12 pr-4 py-6 text-lg rounded-lg border-2"
             />
@@ -137,8 +143,8 @@ const Vehicles = () => {
                   filters.brand
                     ? "bg-primary text-primary-foreground shadow-lg"
                     : activeFilter === "Brand"
-                    ? "bg-primary text-primary-foreground shadow-lg"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      ? "bg-primary text-primary-foreground shadow-lg"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
                 }`}
               >
                 Brand {filters.brand && `(${filters.brand})`}
@@ -174,8 +180,8 @@ const Vehicles = () => {
                   filters.type
                     ? "bg-primary text-primary-foreground shadow-lg"
                     : activeFilter === "Type"
-                    ? "bg-primary text-primary-foreground shadow-lg"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      ? "bg-primary text-primary-foreground shadow-lg"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
                 }`}
               >
                 Type {filters.type && `(${filters.type})`}
@@ -205,15 +211,18 @@ const Vehicles = () => {
             </PopoverContent>
           </Popover>
 
-          <Popover open={activeFilter === "Starting price"} onOpenChange={(open) => setActiveFilter(open ? "Starting price" : null)}>
+          <Popover
+            open={activeFilter === "Starting price"}
+            onOpenChange={(open) => setActiveFilter(open ? "Starting price" : null)}
+          >
             <PopoverTrigger asChild>
               <button
                 className={`px-6 py-3 rounded-full font-medium transition-all ${
                   filters.startingPrice
                     ? "bg-primary text-primary-foreground shadow-lg"
                     : activeFilter === "Starting price"
-                    ? "bg-primary text-primary-foreground shadow-lg"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      ? "bg-primary text-primary-foreground shadow-lg"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
                 }`}
               >
                 Starting price {filters.startingPrice && `($${filters.startingPrice})`}
@@ -226,21 +235,21 @@ const Vehicles = () => {
                   placeholder="Min price"
                   value={priceInputs.starting}
                   onChange={(e) => {
-                    const value = e.target.value;
-                    setPriceInputs((prev) => ({ ...prev, starting: value }));
-                    handleFilterChange("startingPrice", value === "" ? null : (value ? Number(value) : null), true);
+                    const value = e.target.value
+                    setPriceInputs((prev) => ({ ...prev, starting: value }))
+                    handleFilterChange("startingPrice", value === "" ? null : value ? Number(value) : null, true)
                   }}
                   onBlur={() => {
                     // Close popover when user clicks outside
-                    setTimeout(() => setActiveFilter(null), 200);
+                    setTimeout(() => setActiveFilter(null), 200)
                   }}
                   className="w-full"
                 />
                 {filters.startingPrice !== null && (
                   <button
                     onClick={() => {
-                      setPriceInputs((prev) => ({ ...prev, starting: "" }));
-                      handleFilterChange("startingPrice", null);
+                      setPriceInputs((prev) => ({ ...prev, starting: "" }))
+                      handleFilterChange("startingPrice", null)
                     }}
                     className="w-full text-left px-4 py-2 rounded-md hover:bg-muted transition-colors text-muted-foreground"
                   >
@@ -251,15 +260,18 @@ const Vehicles = () => {
             </PopoverContent>
           </Popover>
 
-          <Popover open={activeFilter === "Ending price"} onOpenChange={(open) => setActiveFilter(open ? "Ending price" : null)}>
+          <Popover
+            open={activeFilter === "Ending price"}
+            onOpenChange={(open) => setActiveFilter(open ? "Ending price" : null)}
+          >
             <PopoverTrigger asChild>
               <button
                 className={`px-6 py-3 rounded-full font-medium transition-all ${
                   filters.endingPrice
                     ? "bg-primary text-primary-foreground shadow-lg"
                     : activeFilter === "Ending price"
-                    ? "bg-primary text-primary-foreground shadow-lg"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      ? "bg-primary text-primary-foreground shadow-lg"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
                 }`}
               >
                 Ending price {filters.endingPrice && `($${filters.endingPrice})`}
@@ -272,21 +284,21 @@ const Vehicles = () => {
                   placeholder="Max price"
                   value={priceInputs.ending}
                   onChange={(e) => {
-                    const value = e.target.value;
-                    setPriceInputs((prev) => ({ ...prev, ending: value }));
-                    handleFilterChange("endingPrice", value === "" ? null : (value ? Number(value) : null), true);
+                    const value = e.target.value
+                    setPriceInputs((prev) => ({ ...prev, ending: value }))
+                    handleFilterChange("endingPrice", value === "" ? null : value ? Number(value) : null, true)
                   }}
                   onBlur={() => {
                     // Close popover when user clicks outside
-                    setTimeout(() => setActiveFilter(null), 200);
+                    setTimeout(() => setActiveFilter(null), 200)
                   }}
                   className="w-full"
                 />
                 {filters.endingPrice !== null && (
                   <button
                     onClick={() => {
-                      setPriceInputs((prev) => ({ ...prev, ending: "" }));
-                      handleFilterChange("endingPrice", null);
+                      setPriceInputs((prev) => ({ ...prev, ending: "" }))
+                      handleFilterChange("endingPrice", null)
                     }}
                     className="w-full text-left px-4 py-2 rounded-md hover:bg-muted transition-colors text-muted-foreground"
                   >
@@ -297,15 +309,18 @@ const Vehicles = () => {
             </PopoverContent>
           </Popover>
 
-          <Popover open={activeFilter === "Location"} onOpenChange={(open) => setActiveFilter(open ? "Location" : null)}>
+          <Popover
+            open={activeFilter === "Location"}
+            onOpenChange={(open) => setActiveFilter(open ? "Location" : null)}
+          >
             <PopoverTrigger asChild>
               <button
                 className={`px-6 py-3 rounded-full font-medium transition-all ${
                   filters.location
                     ? "bg-primary text-primary-foreground shadow-lg"
                     : activeFilter === "Location"
-                    ? "bg-primary text-primary-foreground shadow-lg"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      ? "bg-primary text-primary-foreground shadow-lg"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
                 }`}
               >
                 Location {filters.location && `(${filters.location})`}
@@ -354,17 +369,13 @@ const Vehicles = () => {
                     : "bg-white/90 hover:bg-white text-muted-foreground"
                 }`}
               >
-                {selectedCars.includes(car.id) ? (
-                  <Check className="w-5 h-5" />
-                ) : (
-                  <Check className="w-5 h-5" />
-                )}
+                {selectedCars.includes(car.id) ? <Check className="w-5 h-5" /> : <Check className="w-5 h-5" />}
               </button>
-              
+
               <div className="bg-gradient-to-br from-card-dark to-card-dark/80 p-8 h-48 flex items-center justify-center">
                 <CarIcon className="w-32 h-32 text-muted-foreground/30" />
               </div>
-              
+
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div>
@@ -384,7 +395,7 @@ const Vehicles = () => {
                     <span>{car.location}</span>
                   </div>
                 )}
-                
+
                 <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6 flex-wrap">
                   <div className="flex items-center gap-1">
                     <Settings className="w-4 h-4" />
@@ -401,7 +412,7 @@ const Vehicles = () => {
                     </div>
                   )}
                 </div>
-                
+
                 <div className="flex gap-2">
                   <Button
                     onClick={() => toggleCarSelection(car.id)}
@@ -436,7 +447,7 @@ const Vehicles = () => {
           <div className="text-center mb-12">
             <Button
               onClick={() => {
-                navigate("/compare", { state: { carIds: selectedCars } });
+                navigate("/compare", { state: { carIds: selectedCars } })
               }}
               className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-12 py-6 rounded-lg text-lg"
             >
@@ -450,82 +461,82 @@ const Vehicles = () => {
           <div className="flex flex-wrap justify-center items-center gap-12">
             {/* Toyota */}
             <div className="grayscale hover:grayscale-0 transition-all opacity-60 hover:opacity-100 cursor-pointer">
-              <img 
-                src="https://logos-world.net/wp-content/uploads/2020/05/Toyota-Logo.png" 
-                alt="Toyota" 
+              <img
+                src="https://logos-world.net/wp-content/uploads/2020/05/Toyota-Logo.png"
+                alt="Toyota"
                 className="h-16 w-auto object-contain"
                 onError={(e) => {
-                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.style.display = "none"
                 }}
               />
             </div>
-            
+
             {/* Ford */}
             <div className="grayscale hover:grayscale-0 transition-all opacity-60 hover:opacity-100 cursor-pointer">
-              <img 
-                src="https://logos-world.net/wp-content/uploads/2020/05/Ford-Logo.png" 
-                alt="Ford" 
+              <img
+                src="https://logos-world.net/wp-content/uploads/2020/05/Ford-Logo.png"
+                alt="Ford"
                 className="h-16 w-auto object-contain"
                 onError={(e) => {
-                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.style.display = "none"
                 }}
               />
             </div>
-            
+
             {/* Mercedes-Benz */}
             <div className="grayscale hover:grayscale-0 transition-all opacity-60 hover:opacity-100 cursor-pointer">
-              <img 
-                src="https://logos-world.net/wp-content/uploads/2020/05/Mercedes-Benz-Logo.png" 
-                alt="Mercedes-Benz" 
+              <img
+                src="https://logos-world.net/wp-content/uploads/2020/05/Mercedes-Benz-Logo.png"
+                alt="Mercedes-Benz"
                 className="h-16 w-auto object-contain"
                 onError={(e) => {
-                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.style.display = "none"
                 }}
               />
             </div>
-            
+
             {/* Jeep */}
             <div className="grayscale hover:grayscale-0 transition-all opacity-60 hover:opacity-100 cursor-pointer">
-              <img 
-                src="https://logos-world.net/wp-content/uploads/2020/05/Jeep-Logo.png" 
-                alt="Jeep" 
+              <img
+                src="https://logos-world.net/wp-content/uploads/2020/05/Jeep-Logo.png"
+                alt="Jeep"
                 className="h-16 w-auto object-contain"
                 onError={(e) => {
-                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.style.display = "none"
                 }}
               />
             </div>
-            
+
             {/* BMW */}
             <div className="grayscale hover:grayscale-0 transition-all opacity-60 hover:opacity-100 cursor-pointer">
-              <img 
-                src="https://logos-world.net/wp-content/uploads/2020/05/BMW-Logo.png" 
-                alt="BMW" 
+              <img
+                src="https://logos-world.net/wp-content/uploads/2020/05/BMW-Logo.png"
+                alt="BMW"
                 className="h-16 w-auto object-contain"
                 onError={(e) => {
-                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.style.display = "none"
                 }}
               />
             </div>
-            
+
             {/* Audi */}
             <div className="grayscale hover:grayscale-0 transition-all opacity-60 hover:opacity-100 cursor-pointer">
-              <img 
-                src="https://logos-world.net/wp-content/uploads/2020/05/Audi-Logo.png" 
-                alt="Audi" 
+              <img
+                src="https://logos-world.net/wp-content/uploads/2020/05/Audi-Logo.png"
+                alt="Audi"
                 className="h-16 w-auto object-contain"
                 onError={(e) => {
-                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.style.display = "none"
                 }}
               />
             </div>
           </div>
         </div>
       </main>
-      
+
       <Footer />
     </div>
-  );
-};
+  )
+}
 
-export default Vehicles;
+export default Vehicles

@@ -2,11 +2,11 @@
 
 import { useState } from "react"
 import Header from "@/components/Client/Header"
-import Footer from "@/components/Footer"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Search } from "lucide-react"
+import ClientFooter from "@/components/Client/Footer"
 
 type NotificationType = "info" | "warning" | "error" | "success"
 type NotificationFilter = "ALL" | "unread" | "read"
@@ -217,7 +217,7 @@ export default function ClientNotifications() {
         )}
       </main>
 
-      <Footer />
+      <ClientFooter />
     </div>
   )
 }

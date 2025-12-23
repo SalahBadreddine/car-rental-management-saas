@@ -3,11 +3,11 @@
 import { useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import Header from "@/components/Client/Header"
-import Footer from "@/components/Footer"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar"
 import { Settings, Fuel, Wind, Users, Gauge, CarIcon, Check } from "lucide-react"
+import ClientFooter from "@/components/Client/Footer"
 
 export default function ClientVehicleDetails() {
   const { id } = useParams()
@@ -302,7 +302,7 @@ export default function ClientVehicleDetails() {
         </div>
       </main>
 
-      <Footer />
+      <ClientFooter />
     </div>
   )
 }

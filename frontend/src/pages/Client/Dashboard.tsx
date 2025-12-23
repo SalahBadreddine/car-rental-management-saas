@@ -2,11 +2,11 @@
 
 import { Link, useNavigate } from "react-router-dom"
 import Header from "@/components/Client/Header"
-import Footer from "@/components/Footer"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 import { DollarSign, FileText, Settings, Wrench, CarIcon, Phone, Mail, MapPin, X, Wind } from "lucide-react"
+import ClientFooter from "@/components/Client/Footer"
 
 // Mock data
 const revenueByMonth = [
@@ -407,7 +407,7 @@ export default function ClientDashboard() {
         </div>
       </main>
 
-      <Footer />
+      <ClientFooter />
     </div>
   )
 }
