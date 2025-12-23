@@ -2,12 +2,14 @@ import { Inject, Injectable, BadRequestException, InternalServerErrorException }
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../common/providers/supabase.provider';
 import { CreateReservationDto } from './dto/create-reservation.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ReservationsService {
   constructor(
     @Inject(SUPABASE_CLIENT)
     private readonly supabaseClient: SupabaseClient,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(dto: CreateReservationDto, tenantId: string, customerId: string) {
@@ -68,6 +70,35 @@ export class ReservationsService {
     if (error) {
       throw new InternalServerErrorException(`Failed to create reservation: ${error.message}`);
     }
+
+    // Get car and customer details for notification
+    const { data: carDetails } = await this.supabaseClient
+      .from('cars')
+      .select('make, model')
+      .eq('id', dto.carId)
+      .single();
+
+    const { data: customerDetails } = await this.supabaseClient
+      .from('profiles')
+      .select('full_name')
+      .eq('id', customerId)
+      .single();
+
+    const vehicleName = carDetails ? `${carDetails.make} ${carDetails.model}` : 'Unknown Vehicle';
+    const customerName = customerDetails?.full_name ?? 'Customer';
+
+    // Notify tenant admins about new reservation
+    await this.notificationsService.notifyTenantAdmins(
+      tenantId,
+      'New Reservation',
+      `A new reservation has been created for ${vehicleName}. Please review and confirm.`,
+      'info',
+      {
+        vehicleName,
+        customerName,
+        reservationId: data.id,
+      },
+    );
 
     return data;
   }
@@ -130,11 +161,52 @@ export class ReservationsService {
       .update({ status })
       .eq('id', id)
       .eq('tenant_id', tenantId)
-      .select('*')
+      .select('*, cars(make, model), profiles:customer_id(id, full_name)')
       .single();
 
     if (error) {
       throw new InternalServerErrorException(`Failed to update reservation: ${error.message}`);
+    }
+
+    // Send notification to customer based on status change
+    if (data && data.profiles?.id) {
+      const vehicleName = data.cars ? `${data.cars.make} ${data.cars.model}` : 'your vehicle';
+      const customerName = data.profiles?.full_name ?? 'Customer';
+      
+      let notificationTitle = '';
+      let notificationMessage = '';
+      let notificationType: 'info' | 'warning' | 'error' | 'success' = 'info';
+
+      switch (status) {
+        case 'confirmed':
+          notificationTitle = 'Reservation Confirmed';
+          notificationMessage = `Your reservation for ${vehicleName} has been confirmed.`;
+          notificationType = 'success';
+          break;
+        case 'cancelled':
+          notificationTitle = 'Reservation Cancelled';
+          notificationMessage = `Your reservation for ${vehicleName} has been cancelled.`;
+          notificationType = 'warning';
+          break;
+        case 'completed':
+          notificationTitle = 'Rental Completed';
+          notificationMessage = `Your rental of ${vehicleName} has been completed. Thank you!`;
+          notificationType = 'success';
+          break;
+      }
+
+      if (notificationTitle) {
+        await this.notificationsService.createNotification({
+          userId: data.profiles.id,
+          tenantId,
+          title: notificationTitle,
+          message: notificationMessage,
+          type: notificationType,
+          vehicleName,
+          customerName,
+          reservationId: data.id,
+        });
+      }
     }
 
     return data;

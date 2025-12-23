@@ -8,6 +8,7 @@ import { TenantsModule } from './modules/tenants/tenants.module';
 import { CarsModule } from './modules/cars/cars.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     CarsModule,
     ReservationsModule,
     DashboardModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
