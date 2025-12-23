@@ -1,13 +1,13 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Settings, Fuel, Wind, Users, Calendar, Gauge, Palette, ArrowLeft, Car as CarIcon, ChevronRight, Check } from "lucide-react";
 import { cars } from "@/data/cars";
 import { Car } from "@/types/car";
 import { ReservationRow } from "@/components/Client/ReservationRow";
+import ClientFooter from "@/components/Client/Footer";
 
 const CarDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -65,7 +65,7 @@ const CarDetails = () => {
             </Button>
           </div>
         </main>
-        <Footer />
+        <ClientFooter />
       </div>
     );
   }
@@ -300,7 +300,7 @@ const CarDetails = () => {
         </div>
       </main>
       
-      <Footer />
+      <ClientFooter />
     </div>
   );
 };

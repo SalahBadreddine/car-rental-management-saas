@@ -1,157 +1,149 @@
+"use client"
+
+import { useState } from "react"
 import Header from "@/components/Client/Header"
-import Footer from "@/components/Footer"
+import ClientFooter from "@/components/Client/Footer"
+import HeroBackground from "@/components/HeroBackground"
+import heroCar from "@/assets/car_home.png"
+import traceCar from "@/assets/car_trace.png"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Edit } from "lucide-react"
+import { Edit, Save, X, Plus, Trash2 } from "lucide-react"
+import { useRentalData } from "@/contexts/RentalDataContext"
 
 export default function ClientRentalPolicy() {
+  const { policySections, updatePolicy } = useRentalData()
+  const [isEditing, setIsEditing] = useState(false)
+  const [editedSections, setEditedSections] = useState(policySections)
+
+  const handleAddItem = (sectionIndex: number) => {
+    const newSections = [...editedSections]
+    newSections[sectionIndex].items.push("")
+    setEditedSections(newSections)
+  }
+
+  const handleDeleteItem = (sectionIndex: number, itemIndex: number) => {
+    const newSections = [...editedSections]
+    newSections[sectionIndex].items.splice(itemIndex, 1)
+    setEditedSections(newSections)
+  }
+
+  const handleUpdateItem = (sectionIndex: number, itemIndex: number, value: string) => {
+    const newSections = [...editedSections]
+    newSections[sectionIndex].items[itemIndex] = value
+    setEditedSections(newSections)
+  }
+
+  const handleSave = () => {
+    updatePolicy(editedSections)
+    setIsEditing(false)
+  }
+
+  const handleCancel = () => {
+    setEditedSections(policySections)
+    setIsEditing(false)
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-background">
       <Header />
 
       <main className="flex-1">
-        {/* Hero Banner */}
-        <div className="container mx-auto px-4 py-8">
-          <Card className="bg-black text-white rounded-3xl overflow-hidden relative">
-            <div className="absolute right-0 top-0 bottom-0 w-1/2 overflow-hidden">
-              <img
-                src="/images/image-2014-12-2025-20at-205.jpeg"
-                alt="Sports car"
-                className="h-full w-full object-cover opacity-90"
-              />
-            </div>
-            <div className="relative z-10 p-12">
-              <button className="mb-6 p-3 bg-white/10 rounded-lg backdrop-blur-sm hover:bg-white/20 transition-colors">
-                <Edit className="w-6 h-6" />
-              </button>
-              <h1 className="text-5xl font-bold mb-4">
-                Official RentoGo <span className="text-red-600">Rental Policy</span>
-              </h1>
-              <p className="text-white/90 text-lg max-w-md">
-                Please review our full terms and conditions before confirming your reservation.
-              </p>
-            </div>
-          </Card>
-        </div>
+        {/* Hero Section */}
+        <HeroBackground trace={traceCar} car={heroCar}>
+          <div>
+            <button
+              onClick={() => setIsEditing(!isEditing)}
+              className="mb-6 p-3 bg-white/10 rounded-lg backdrop-blur-sm hover:bg-white/20 transition-colors"
+            >
+              {isEditing ? <X className="w-6 h-6" /> : <Edit className="w-6 h-6" />}
+            </button>
+            <h1 className="font-heading text-5xl md:text-6xl font-bold mb-4 leading-tight text-white">
+              Official RentoGo <span className="text-[#D32F2F]">Rental Policy</span>
+            </h1>
+            <p className="text-lg text-white/80 leading-relaxed max-w-md">
+              {isEditing
+                ? "Edit the rental policy below. Changes will be reflected on the customer side."
+                : "Please review our full terms and conditions before confirming your reservation."}
+            </p>
+          </div>
+        </HeroBackground>
 
         {/* Policy Content */}
-        <div className="container mx-auto px-4 py-12 max-w-4xl">
-          <Card className="bg-gray-100 p-6 rounded-xl mb-8">
-            <p className="text-sm text-gray-700">
-              *Last Updated: November 22, 2025. This policy is subject to change without prior notice. Please refer to
-              your physical rental agreement for the final binding terms.
-            </p>
-          </Card>
+        <div className="py-12 bg-background">
+          <div className="container mx-auto px-4 max-w-4xl">
+            <Card className="bg-gray-100 p-6 rounded-xl mb-8 border border-border">
+              <p className="text-sm text-muted-foreground">
+                *Last Updated:{" "}
+                {new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}. This
+                policy is subject to change without prior notice.
+              </p>
+            </Card>
 
-          {/* 1. Renter Requirements */}
-          <section className="mb-12">
-            <h2 className="text-3xl font-bold mb-6">1. Renter Requirements</h2>
-            <ul className="space-y-4 list-disc list-inside text-gray-700">
-              <li>
-                <strong>**Minimum Age:**</strong> The primary renter must be 21 years of age or older. A daily surcharge
-                of \$25 applies to renters aged 21-24.
-              </li>
-              <li>
-                <strong>**Driver's License:**</strong> A valid, non-expired driver's license, held for at least one
-                year, must be presented at the time of rental. International renters must also present a valid passport.
-              </li>
-              <li>
-                <strong>**Payment Method:**</strong> A major credit card (Visa, MasterCard, Amex) in the primary
-                renter's name is required for both the rental charges and the security deposit.
-              </li>
-            </ul>
-          </section>
+            <div className="space-y-8">
+              {editedSections.map((section, sectionIdx) => (
+                <section key={section.id} className="space-y-4">
+                  <h2 className="text-3xl font-bold">{section.section}</h2>
 
-          {/* 2. Payments and Deposits */}
-          <section className="mb-12">
-            <h2 className="text-3xl font-bold mb-6">2. Payments and Deposits</h2>
-            <ul className="space-y-4 list-disc list-inside text-gray-700">
-              <li>
-                <strong>**Security Deposit:**</strong> A refundable security deposit of \$200 to \$500 (depending on
-                vehicle class) will be authorized on the credit card at pickup. This amount will be released upon the
-                satisfactory return of the vehicle.
-              </li>
-              <li>
-                <strong>**Taxes and Fees:**</strong> All quoted rental prices are exclusive of local taxes, airport
-                surcharges, and licensing fees, which will be itemized on the final invoice.
-              </li>
-              <li>
-                <strong>**Payment Timing:**</strong> The estimated total rental charges must be paid in full at the time
-                of vehicle pickup.
-              </li>
-            </ul>
-          </section>
+                  {isEditing ? (
+                    <div className="space-y-3">
+                      {section.items.map((item, itemIdx) => (
+                        <div key={itemIdx} className="flex gap-3 items-start">
+                          <textarea
+                            value={item}
+                            onChange={(e) => handleUpdateItem(sectionIdx, itemIdx, e.target.value)}
+                            className="flex-1 p-3 border border-border rounded-lg text-sm font-sans bg-white focus:outline-none focus:ring-2 focus:ring-[#D32F2F]"
+                            rows={2}
+                            placeholder="Enter policy item"
+                          />
+                          <button
+                            onClick={() => handleDeleteItem(sectionIdx, itemIdx)}
+                            className="mt-1 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => handleAddItem(sectionIdx)}
+                        className="mt-2 flex items-center gap-2 text-[#D32F2F] hover:text-red-700 font-semibold"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Item
+                      </button>
+                    </div>
+                  ) : (
+                    <ul className="space-y-3 list-disc list-inside text-muted-foreground">
+                      {section.items.map((item, itemIdx) => (
+                        <li key={itemIdx} className="leading-relaxed">
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              ))}
+            </div>
 
-          {/* 3. Insurance and Liability */}
-          <section className="mb-12">
-            <h2 className="text-3xl font-bold mb-6">3. Insurance and Liability</h2>
-            <p className="text-gray-700 mb-4">
-              The renter is responsible for all damage, loss, or theft of the rental vehicle. RentoGo offers several
-              optional protection packages:
-            </p>
-            <ul className="space-y-4 list-disc list-inside text-gray-700">
-              <li>
-                <strong>**Basic Coverage:**</strong> Standard state-mandated minimum liability insurance is included in
-                the rental price.
-              </li>
-              <li>
-                <strong>**Collision Damage Waiver (CDW):**</strong> Available for purchase. Reduces the renter's
-                financial responsibility for damage to the RentoGo vehicle.
-              </li>
-              <li>
-                <strong>**Supplemental Liability Insurance (SLI):**</strong> Available for purchase. Provides additional
-                liability protection up to \$1 million.
-              </li>
-            </ul>
-          </section>
-
-          {/* 4. Fuel and Mileage */}
-          <section className="mb-12">
-            <h2 className="text-3xl font-bold mb-6">4. Fuel and Mileage</h2>
-            <ul className="space-y-4 list-disc list-inside text-gray-700">
-              <li>
-                <strong>**Fuel Policy:**</strong> Vehicles are provided with a full tank of fuel and must be returned
-                full. If not returned full, a refueling fee plus the cost of the missing fuel will be charged at the
-                current market rate.
-              </li>
-              <li>
-                <strong>**Mileage:**</strong> Most rentals include unlimited mileage. Please confirm the specific
-                mileage terms for premium and luxury vehicles, as limits may apply.
-              </li>
-            </ul>
-          </section>
-
-          {/* 5. Cancellation Policy */}
-          <section className="mb-12">
-            <h2 className="text-3xl font-bold mb-6">5. Cancellation Policy</h2>
-            <ul className="space-y-4 list-disc list-inside text-gray-700">
-              <li>
-                <strong>**Cancellations 48+ Hours Prior:**</strong> Full refund of any prepaid amount.
-              </li>
-              <li>
-                <strong>**Cancellations Less Than 48 Hours Prior:**</strong> A cancellation fee equivalent to one day's
-                rental rate will be charged.
-              </li>
-              <li>
-                <strong>**No-Show:**</strong> If the renter fails to pick up the vehicle on the reserved date without
-                prior notice, a "No-Show" fee equivalent to the full reservation cost (up to 3 days) will be charged.
-              </li>
-            </ul>
-          </section>
-
-          {/* Action Buttons */}
-          <div className="flex gap-4 justify-end mt-12">
-            <Button variant="outline" size="lg" className="px-8 bg-transparent">
-              Cancel
-            </Button>
-            <Button size="lg" className="bg-red-600 hover:bg-red-700 text-white px-8">
-              Save
-            </Button>
+            {/* Action Buttons */}
+            <div className="flex gap-4 justify-end mt-12">
+              {isEditing && (
+                <>
+                  <Button variant="outline" size="lg" className="px-8 bg-transparent" onClick={handleCancel}>
+                    Cancel
+                  </Button>
+                  <Button size="lg" className="bg-[#D32F2F] hover:bg-red-700 text-white px-8" onClick={handleSave}>
+                    <Save className="w-5 h-5 mr-2" />
+                    Save Changes
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </main>
 
-      <Footer />
+      <ClientFooter />
     </div>
   )
 }

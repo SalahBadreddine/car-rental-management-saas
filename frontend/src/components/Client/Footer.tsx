@@ -4,7 +4,7 @@ import { Link } from "react-router-dom"
 import { MapPin, Mail, Phone, Facebook, Instagram, X, Youtube } from "lucide-react"
 import logo from "@/assets/logo.png"
 
-const Footer = () => {
+const ClientFooter = () => {
   const ICON_CONTAINER_CLASS = "w-10 h-10 rounded-full bg-[#D32F2F] flex items-center justify-center flex-shrink-0"
 
   return (
@@ -80,23 +80,29 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Useful links Section */}
+          {/* Useful links Section - Client specific routes */}
           <div>
             <h3 className="font-heading font-bold text-foreground text-xl mb-6">Useful links</h3>
             <ul className="space-y-4">
               <li>
-                <Link to="/about" className="text-base text-foreground hover:text-muted-foreground transition-colors">
+                <Link
+                  to="/client/about"
+                  className="text-base text-foreground hover:text-muted-foreground transition-colors"
+                >
                   About us
                 </Link>
               </li>
               <li>
-                <Link to="/contact" className="text-base text-foreground hover:text-muted-foreground transition-colors">
+                <Link
+                  to="/client/contact"
+                  className="text-base text-foreground hover:text-muted-foreground transition-colors"
+                >
                   Contact us
                 </Link>
               </li>
               <li>
                 <Link
-                  to="/rental-policy"
+                  to="/client/rental-policy"
                   className="text-base text-foreground hover:text-muted-foreground transition-colors"
                 >
                   Rental Policy
@@ -113,7 +119,10 @@ const Footer = () => {
                 </a>
               </li>
               <li>
-                <Link to="/enduser/faq" className="text-base text-foreground hover:text-muted-foreground transition-colors">
+                <Link
+                  to="/client/faq"
+                  className="text-base text-foreground hover:text-muted-foreground transition-colors"
+                >
                   F.A.Q
                 </Link>
               </li>
@@ -164,4 +173,4 @@ const Footer = () => {
   )
 }
 
-export default Footer
+export default ClientFooter

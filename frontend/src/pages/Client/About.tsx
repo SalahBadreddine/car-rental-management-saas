@@ -1,11 +1,11 @@
 import { Link } from "react-router-dom"
 import Header from "@/components/Client/Header"
-import Footer from "@/components/Footer"
 import HeroBackground from "@/components/HeroBackground"
 import { Button } from "@/components/ui/button"
 import { Users, CarIcon, Headphones } from "lucide-react"
 import heroCar from "@/assets/car_home.png"
 import traceCar from "@/assets/car_trace.png"
+import ClientFooter from "@/components/Client/Footer"
 
 const ClientAbout = () => {
   return (
@@ -94,7 +94,7 @@ const ClientAbout = () => {
         </div>
       </section>
 
-      <Footer />
+      <ClientFooter />
     </div>
   )
 }

@@ -1,11 +1,11 @@
 import Header from "@/components/Client/Header"
-import Footer from "@/components/Footer"
 import HeroBackground from "@/components/HeroBackground"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import heroCar from "@/assets/car_home.png"
 import traceCar from "@/assets/car_trace.png"
+import ClientFooter from "@/components/Client/Footer"
 
 const ClientContact = () => {
   return (
@@ -34,7 +34,7 @@ const ClientContact = () => {
         </div>
       </HeroBackground>
 
-      <Footer />
+      <ClientFooter />
     </div>
   )
 }

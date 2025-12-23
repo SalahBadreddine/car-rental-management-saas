@@ -3,13 +3,13 @@
 import { useState, useMemo, useEffect } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import Header from "@/components/Client/Header"
-import Footer from "@/components/Footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Settings, Fuel, Wind, Search, CarIcon, MapPin, Check, Plus } from "lucide-react"
 import { cars, brands, carTypes, locations } from "@/data/cars"
 import type { CarFilters } from "@/types/car"
+import ClientFooter from "@/components/Client/Footer"
 
 const Vehicles = () => {
   const navigate = useNavigate()
@@ -529,7 +529,7 @@ const Vehicles = () => {
         </div>
       </main>
 
-      <Footer />
+      <ClientFooter />
     </div>
   )
 }
