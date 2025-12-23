@@ -1,10 +1,39 @@
-import { Navigate } from "react-router-dom";
-import { getAccessToken } from "@/lib/auth";
+"use client"
 
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const token = getAccessToken();
-  if (!token) return <Navigate to="/signin" replace />;
-  return children;
-};
+import { Navigate } from "react-router-dom"
+import { useAuth } from "@/contexts/AuthContext"
 
-export default ProtectedRoute;
+interface ProtectedRouteProps {
+  children: JSX.Element
+  requiredRole?: "client" | "enduser"
+}
+
+export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
+  const { user, userRole, isLoading } = useAuth()
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full" />
+        </div>
+      </div>
+    )
+  }
+
+  // Redirect to role selection if not logged in
+  if (!user || !userRole) {
+    return <Navigate to="/role-select" replace />
+  }
+
+  // Check role if required
+  if (requiredRole && userRole !== requiredRole) {
+    return <Navigate to="/" replace />
+  }
+
+  return children
+}
+
+// Keep default export for backward compatibility
+export default ProtectedRoute

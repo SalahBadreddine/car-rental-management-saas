@@ -15,12 +15,17 @@ export const getUser = () => {
 }
 
 export const getUserRole = () => {
-  const role = localStorage.getItem("user_role")
-  return role || "client" // Default to client
+  const user = getUser()
+  // Get role from user object, fallback to localStorage for backward compatibility
+  return user?.role || localStorage.getItem("user_role") || "enduser"
 }
 
 export const setUserRole = (role: "client" | "enduser") => {
   localStorage.setItem("user_role", role)
+  const user = getUser()
+  if (user) {
+    localStorage.setItem("user", JSON.stringify({ ...user, role }))
+  }
 }
 
 export const logout = () => {
@@ -28,4 +33,5 @@ export const logout = () => {
   localStorage.removeItem("refresh_token")
   localStorage.removeItem("user")
   localStorage.removeItem("user_role")
+  localStorage.removeItem("selectedLocation")
 }
