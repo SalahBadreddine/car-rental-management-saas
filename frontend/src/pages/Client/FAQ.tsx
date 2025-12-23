@@ -67,9 +67,23 @@ export default function ClientFAQ() {
           <div>
             <button
               onClick={() => setIsEditing(!isEditing)}
-              className="mb-6 p-3 bg-white/10 rounded-lg backdrop-blur-sm hover:bg-white/20 transition-colors"
+              className={`mb-6 p-3 rounded-lg backdrop-blur-sm transition-all duration-300 flex items-center gap-2 font-semibold shadow-lg ${
+                isEditing 
+                  ? "bg-[#D32F2F] text-white ring-2 ring-white/50" 
+                  : "bg-white text-[#D32F2F] hover:bg-gray-100"
+              }`}
             >
-              {isEditing ? <X className="w-6 h-6" /> : <Edit className="w-6 h-6" />}
+              {isEditing ? (
+                <>
+                  <X className="w-6 h-6" />
+                  <span>Exit Editing</span>
+                </>
+              ) : (
+                <>
+                  <Edit className="w-6 h-6" />
+                  <span>Edit Content</span>
+                </>
+              )}
             </button>
             <h1 className="font-heading text-5xl md:text-6xl font-bold mb-4 leading-tight text-white">
               Frequently Asked
