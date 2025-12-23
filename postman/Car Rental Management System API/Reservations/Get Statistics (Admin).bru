@@ -1,0 +1,25 @@
+meta {
+  name: Get Statistics (Admin)
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/reservations/statistics
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+docs {
+  Get reservation statistics for dashboard.
+  Returns: total_reservations, revenue_by_month, average_duration, by_status
+  Auth: Required (Admin only)
+}
