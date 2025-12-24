@@ -2,6 +2,8 @@ import { Inject, Injectable, BadRequestException, InternalServerErrorException }
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../common/providers/supabase.provider';
 import { SearchCarsDto } from './dto/search-cars.dto';
+import { FeaturedCarsDto } from './dto/featured-cars.dto';
+
 
 @Injectable()
 export class CarsService {
@@ -96,5 +98,102 @@ export class CarsService {
     }
 
     return data ?? [];
+  }
+
+  async getFeatured(query: FeaturedCarsDto) {
+    const limit = query.limit || 4;
+
+    let supabaseQuery = this.supabaseClient
+      .from('cars')
+      .select('*')
+      .eq('is_featured', true)
+      .order('rental_count', { ascending: false })
+      .limit(limit);
+
+    if (query.tenantId) supabaseQuery = supabaseQuery.eq('tenant_id', query.tenantId);
+
+    const { data, error } = await supabaseQuery;
+
+    if (error) throw new BadRequestException(error.message);
+
+    return (data as Array<{
+      id: string;
+      make: string;
+      category: string;
+      price_per_day: number;
+      rental_count: number;
+      primary_image_url?: string;
+      is_featured?: boolean;
+      [key: string]: any;
+    }>) ?? [];
+  }
+
+  //  Get car statistics (admin only)
+  async getStatistics(tenantId?: string) {
+    const { data, error } = await this.supabaseClient
+      .from('cars')
+      .select('tenant_id, id, make, category, location, rental_count, status');
+
+    if (error || !data) throw new BadRequestException(error?.message || 'Failed to fetch cars');
+
+    const cars = data as Array<{
+      id: string;
+      tenant_id: string | null;
+      make: string;
+      category: string;
+      location: string;
+      rental_count: number;
+      status: string;
+      [key: string]: any;
+    }>;
+
+    const filteredCars = tenantId ? cars.filter(c => c.tenant_id === tenantId) : cars;
+
+    const stats: {
+      totalCars: number;
+      byStatus: Record<string, number>;
+      byCategory: Record<string, number>;
+      byLocation: Record<string, number>;
+      averageRentalCount: number;
+      mostRented: { id: string; make: string; rental_count: number } | null;
+      leastRented: { id: string; make: string; rental_count: number } | null;
+    } = {
+      totalCars: filteredCars.length,
+      byStatus: {},
+      byCategory: {},
+      byLocation: {},
+      averageRentalCount: 0,
+      mostRented: null,
+      leastRented: null,
+    };
+
+    if (filteredCars.length > 0) {
+      let totalRental = 0;
+
+      filteredCars.forEach(car => {
+        totalRental += car.rental_count;
+        stats.byStatus[car.status] = (stats.byStatus[car.status] || 0) + 1;
+        stats.byCategory[car.category] = (stats.byCategory[car.category] || 0) + 1;
+        stats.byLocation[car.location] = (stats.byLocation[car.location] || 0) + 1;
+      });
+
+      stats.averageRentalCount = totalRental / filteredCars.length;
+
+      const sortedByRental = [...filteredCars].sort((a, b) => b.rental_count - a.rental_count);
+
+      stats.mostRented = {
+        id: sortedByRental[0].id,
+        make: sortedByRental[0].make,
+        rental_count: sortedByRental[0].rental_count,
+      };
+
+      stats.leastRented = {
+        id: sortedByRental[sortedByRental.length - 1].id,
+        make: sortedByRental[sortedByRental.length - 1].make,
+        rental_count: sortedByRental[sortedByRental.length - 1].rental_count,
+      };
+    }
+
+    return stats;
   }
 }

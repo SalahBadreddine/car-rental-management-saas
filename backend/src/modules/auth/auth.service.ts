@@ -1,4 +1,4 @@
-import { Inject, Injectable, BadRequestException, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, BadRequestException, InternalServerErrorException, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../common/providers/supabase.provider';
 import { SignupDto } from './dto/signup.dto';
@@ -8,6 +8,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class AuthService {
@@ -266,5 +267,51 @@ export class AuthService {
     return {
       message: 'Password changed successfully',
     };
+  }
+
+  async updateProfile(userId: string, data: UpdateProfileDto) {
+    if (data.driverLicenseExpiry && new Date(data.driverLicenseExpiry) < new Date()) {
+      throw new BadRequestException('Driver license expiry date must be in the future');
+    }
+
+    const { error } = await this.supabase
+      .from('profiles')
+      .update({
+        full_name: data.fullName,
+        phone_number: data.phoneNumber,
+        driver_license_expiry: data.driverLicenseExpiry,
+      })
+      .eq('id', userId);
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    const { data: updatedProfile } = await this.supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    return updatedProfile;
+  }
+
+  //  Get user by ID (admin-only)
+  async getUserById(userId: string, currentUser: any) {
+    if (currentUser.role !== 'client_admin') {
+      throw new ForbiddenException('Access denied: Admins only');
+    }
+
+    const { data: profile, error } = await this.supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error || !profile) {
+      throw new BadRequestException('User not found');
+    }
+
+    return profile;
   }
 }

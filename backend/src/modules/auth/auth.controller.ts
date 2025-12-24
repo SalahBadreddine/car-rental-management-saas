@@ -1,4 +1,6 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Get, UseGuards } from '@nestjs/common';
+import { 
+  Controller, Post, Body, HttpCode, HttpStatus, Get, Patch, Param, UseGuards, BadRequestException 
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
@@ -7,8 +9,10 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+
 
 @Controller('auth')
 export class AuthController {
@@ -73,5 +77,17 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async changePassword(@CurrentUser() user: any, @Body() dto: ChangePasswordDto) {
     return this.authService.changePassword(user.id, user.email, dto);
+  }
+
+  @Patch('users/profile')
+  @UseGuards(JwtAuthGuard)
+  async updateProfile(@CurrentUser() user: any, @Body() body: UpdateProfileDto) {
+    return this.authService.updateProfile(user.id, body);
+  }
+
+  @Get('users/:id')
+  @UseGuards(JwtAuthGuard)
+  async getProfileById(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.authService.getUserById(id, user);
   }
 }

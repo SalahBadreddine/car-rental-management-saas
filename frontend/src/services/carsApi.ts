@@ -2,7 +2,8 @@ const API_BASE_URL = 'http://localhost:3000';
 // this should be changed later , it's just hardcoded for a fixed tenant id for now for testing purposes
 const TENANT_ID = '11111111-1111-1111-1111-111111111111';
 // const TENANT_ID = '22222222-2222-2222-2222-222222222222';
-// const TENANT_ID = '33333333-3333-3333-3333-333333333333';
+// const TENANT_ID = 'e474e94a-4730-4735-a468-714390c1de80';
+// const TENANT_ID = '855a30d8-f0f9-4d37-89db-3ae9a105891f';
 
 
 export interface Car {
