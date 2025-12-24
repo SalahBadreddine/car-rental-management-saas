@@ -182,4 +182,131 @@ export class ReservationsService {
 
     return { id: data?.id, message: 'Reservation cancelled successfully' };
   }
+
+  /**
+   * Get reservation statistics for dashboard (Admin only)
+   */
+  async getStatistics(tenantId: string) {
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID is required.');
+    }
+
+    // Get all reservations for this tenant
+    const { data: reservations, error } = await this.supabaseClient
+      .from('reservations')
+      .select('id, start_date, end_date, total_price, status, created_at')
+      .eq('tenant_id', tenantId);
+
+    if (error) {
+      throw new InternalServerErrorException(`Failed to fetch statistics: ${error.message}`);
+    }
+
+    const allReservations = reservations ?? [];
+
+    // Calculate total reservations
+    const total_reservations = allReservations.length;
+
+    // Calculate revenue by month
+    const revenueMap: Record<string, number> = {};
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    allReservations.forEach((r) => {
+      if (r.status === 'completed' || r.status === 'confirmed') {
+        const date = new Date(r.created_at);
+        const monthKey = months[date.getMonth()];
+        revenueMap[monthKey] = (revenueMap[monthKey] || 0) + Number(r.total_price);
+      }
+    });
+
+    const revenue_by_month = Object.entries(revenueMap).map(([month, revenue]) => ({
+      month,
+      revenue,
+    }));
+
+    // Calculate average duration
+    let totalDays = 0;
+    let validCount = 0;
+    allReservations.forEach((r) => {
+      const start = new Date(r.start_date);
+      const end = new Date(r.end_date);
+      const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      if (days > 0) {
+        totalDays += days;
+        validCount++;
+      }
+    });
+    const average_duration = validCount > 0 ? Math.round((totalDays / validCount) * 10) / 10 : 0;
+
+    // Count by status
+    const by_status: Record<string, number> = {};
+    allReservations.forEach((r) => {
+      by_status[r.status] = (by_status[r.status] || 0) + 1;
+    });
+
+    return {
+      total_reservations,
+      revenue_by_month,
+      average_duration,
+      by_status,
+    };
+  }
+
+  /**
+   * Get all reservations for a specific customer (Admin only)
+   */
+  async findByCustomerId(customerId: string, tenantId: string) {
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID is required.');
+    }
+
+    if (!customerId) {
+      throw new BadRequestException('Customer ID is required.');
+    }
+
+    const { data, error } = await this.supabaseClient
+      .from('reservations')
+      .select(`
+        *,
+        cars (id, make, model, year, primary_image_url, price_per_day)
+      `)
+      .eq('tenant_id', tenantId)
+      .eq('customer_id', customerId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new InternalServerErrorException(`Failed to fetch customer reservations: ${error.message}`);
+    }
+
+    return data ?? [];
+  }
+
+  /**
+   * Get all reservations for a specific car (Admin only)
+   */
+  async findByCarId(carId: string, tenantId: string) {
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID is required.');
+    }
+
+    if (!carId) {
+      throw new BadRequestException('Car ID is required.');
+    }
+
+    const { data, error } = await this.supabaseClient
+      .from('reservations')
+      .select(`
+        *,
+        profiles:customer_id (id, full_name, phone_number)
+      `)
+      .eq('tenant_id', tenantId)
+      .eq('car_id', carId)
+      .order('start_date', { ascending: false });
+
+    if (error) {
+      throw new InternalServerErrorException(`Failed to fetch car reservations: ${error.message}`);
+    }
+
+    return data ?? [];
+  }
 }
+

@@ -1,0 +1,28 @@
+meta {
+  name: Get By Customer (Admin)
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/reservations/customer/:customer_id
+  body: none
+  auth: bearer
+}
+
+params:path {
+  customer_id: CUSTOMER_UUID_HERE
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+docs {
+  Get all reservations for a specific customer.
+  Auth: Required (Admin only)
+}
