@@ -1,0 +1,28 @@
+meta {
+  name: Mark Read
+  type: http
+  seq: 2
+}
+
+patch {
+  url: {{baseUrl}}/notifications/:id/read
+  body: none
+  auth: bearer
+}
+
+params:path {
+  id: NOTIFICATION_UUID_HERE
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+docs {
+  Mark a single notification as read.
+  Returns the updated notification with is_read: true
+}

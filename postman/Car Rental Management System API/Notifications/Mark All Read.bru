@@ -1,0 +1,24 @@
+meta {
+  name: Mark All Read
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/notifications/read-all
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+docs {
+  Mark all notifications as read for the current user.
+  Returns: count (number of marked), message
+}
