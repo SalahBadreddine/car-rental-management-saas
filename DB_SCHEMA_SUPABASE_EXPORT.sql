@@ -1,0 +1,101 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.cars (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  tenant_id uuid NOT NULL,
+  make text NOT NULL,
+  model text NOT NULL,
+  year integer NOT NULL,
+  license_plate text NOT NULL,
+  color text,
+  category text NOT NULL,
+  price_per_day numeric NOT NULL,
+  deposit_amount numeric DEFAULT 0,
+  transmission text CHECK (transmission = ANY (ARRAY['Automatic'::text, 'Manual'::text])),
+  fuel_type text,
+  seats integer,
+  features ARRAY,
+  location_id uuid,
+  status USER-DEFINED DEFAULT 'available'::car_status,
+  primary_image_url text,
+  rental_count integer DEFAULT 0,
+  gallery_urls ARRAY,
+  CONSTRAINT cars_pkey PRIMARY KEY (id),
+  CONSTRAINT cars_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),
+  CONSTRAINT cars_location_id_fkey FOREIGN KEY (location_id) REFERENCES public.locations(id)
+);
+CREATE TABLE public.locations (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  name text NOT NULL,
+  city text NOT NULL,
+  address text,
+  image_url text NOT NULL,
+  CONSTRAINT locations_pkey PRIMARY KEY (id),
+  CONSTRAINT locations_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
+);
+CREATE TABLE public.notifications (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  user_id uuid NOT NULL,
+  tenant_id uuid,
+  title text NOT NULL,
+  message text NOT NULL,
+  type USER-DEFINED DEFAULT 'system_alert'::notification_type,
+  is_read boolean DEFAULT false,
+  CONSTRAINT notifications_pkey PRIMARY KEY (id),
+  CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id),
+  CONSTRAINT notifications_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
+);
+CREATE TABLE public.payments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  reservation_id uuid NOT NULL,
+  tenant_id uuid NOT NULL,
+  amount_paid numeric NOT NULL,
+  method USER-DEFINED NOT NULL,
+  transaction_id text,
+  status text DEFAULT 'completed'::text,
+  CONSTRAINT payments_pkey PRIMARY KEY (id),
+  CONSTRAINT payments_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES public.reservations(id),
+  CONSTRAINT payments_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
+);
+CREATE TABLE public.profiles (
+  id uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  full_name text,
+  phone_number text NOT NULL,
+  role USER-DEFINED DEFAULT 'customer'::user_role,
+  tenant_id uuid,
+  CONSTRAINT profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id),
+  CONSTRAINT profiles_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
+);
+CREATE TABLE public.reservations (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  tenant_id uuid NOT NULL,
+  car_id uuid NOT NULL,
+  customer_id uuid NOT NULL,
+  start_date timestamp with time zone NOT NULL,
+  end_date timestamp with time zone NOT NULL,
+  total_price numeric NOT NULL,
+  status USER-DEFINED DEFAULT 'pending'::reservation_status,
+  CONSTRAINT reservations_pkey PRIMARY KEY (id),
+  CONSTRAINT reservations_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),
+  CONSTRAINT reservations_car_id_fkey FOREIGN KEY (car_id) REFERENCES public.cars(id),
+  CONSTRAINT reservations_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.tenants (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  name text NOT NULL,
+  slug text NOT NULL UNIQUE,
+  contact_email text,
+  phone_number text,
+  logo_url text,
+  subscription_status text DEFAULT 'active'::text,
+  CONSTRAINT tenants_pkey PRIMARY KEY (id)
+);
