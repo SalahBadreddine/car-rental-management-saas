@@ -97,6 +97,9 @@ export class ReservationsService {
         vehicleName,
         customerName,
         reservationId: data.id,
+        startDate: dto.startDate,
+        endDate: dto.endDate,
+        totalPrice: totalPrice,
       },
     );
 

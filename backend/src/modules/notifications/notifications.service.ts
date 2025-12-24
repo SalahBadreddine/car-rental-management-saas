@@ -1,6 +1,7 @@
 import { Inject, Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../common/providers/supabase.provider';
+import { EmailService } from '../email/email.service';
 
 export type NotificationType = 'info' | 'warning' | 'error' | 'success';
 
@@ -20,6 +21,7 @@ export class NotificationsService {
   constructor(
     @Inject(SUPABASE_CLIENT)
     private readonly supabaseClient: SupabaseClient,
+    private readonly emailService: EmailService,
   ) {}
 
   /**
@@ -147,19 +149,26 @@ export class NotificationsService {
   }
 
   /**
-   * Helper: Notify admin users for a tenant
+   * Helper: Notify admin users for a tenant (in-app + email)
    */
   async notifyTenantAdmins(
     tenantId: string,
     title: string,
     message: string,
     type: NotificationType,
-    extras?: { vehicleName?: string; customerName?: string; reservationId?: string },
+    extras?: { 
+      vehicleName?: string; 
+      customerName?: string; 
+      reservationId?: string;
+      startDate?: string;
+      endDate?: string;
+      totalPrice?: number;
+    },
   ) {
-    // Get all admin users for this tenant
+    // Get all admin users for this tenant (with email from auth.users)
     const { data: admins, error } = await this.supabaseClient
       .from('profiles')
-      .select('id')
+      .select('id, full_name')
       .eq('tenant_id', tenantId)
       .eq('role', 'client_admin');
 
@@ -168,16 +177,35 @@ export class NotificationsService {
       return;
     }
 
-    // Create notification for each admin
+    // Create notification + send email for each admin
     for (const admin of admins) {
+      // In-app notification
       await this.createNotification({
         userId: admin.id,
         tenantId,
         title,
         message,
         type,
-        ...extras,
+        vehicleName: extras?.vehicleName,
+        customerName: extras?.customerName,
+        reservationId: extras?.reservationId,
       });
+
+      // Get admin email from auth.users via Supabase admin API
+      const { data: userData } = await this.supabaseClient.auth.admin.getUserById(admin.id);
+      
+      if (userData?.user?.email && extras?.vehicleName && extras?.reservationId) {
+        // Send email notification
+        await this.emailService.sendNewReservationEmail(userData.user.email, {
+          vehicleName: extras.vehicleName,
+          customerName: extras.customerName ?? 'Customer',
+          startDate: extras.startDate ?? 'N/A',
+          endDate: extras.endDate ?? 'N/A',
+          totalPrice: extras.totalPrice ?? 0,
+          reservationId: extras.reservationId,
+        });
+      }
     }
   }
 }
+
