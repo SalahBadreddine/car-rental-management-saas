@@ -1,0 +1,24 @@
+meta {
+  name: Record Payment
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/payments
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "reservationId": "your-reservation-uuid-here",
+    "amount": 5000,
+    "paymentMethod": "cash",
+    "notes": "Deposit payment"
+  }
+}

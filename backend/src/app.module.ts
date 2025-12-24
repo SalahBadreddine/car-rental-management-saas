@@ -10,6 +10,7 @@ import { ReservationsModule } from './modules/reservations/reservations.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { EmailModule } from './modules/email/email.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { EmailModule } from './modules/email/email.module';
     ReservationsModule,
     DashboardModule,
     NotificationsModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
