@@ -1,0 +1,30 @@
+meta {
+  name: Signup
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/auth/signup
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "user@example.com",
+    "password": "password123",
+    "fullName": "John Doe",
+    "phoneNumber": "1234567890",
+    "role": "customer",
+    "tenantId": "OPTIONAL_TENANT_ID"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

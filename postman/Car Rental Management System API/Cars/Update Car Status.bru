@@ -1,0 +1,26 @@
+meta {
+  name: Update Car Status
+  type: http
+  seq: 7
+}
+
+patch {
+  url: {{baseUrl}}/cars/CAR_ID_HERE/status
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "status": "maintenance"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

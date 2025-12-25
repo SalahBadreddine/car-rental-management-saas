@@ -40,10 +40,13 @@ const Index = () => {
           <Button
             size="lg"
             variant="outline"
-            className="border-white text-white hover:bg-white hover:text-black font-semibold px-8 h-12 rounded-lg"
+            className="border-white text-white hover:bg-white hover:text-black font-semibold px-8 h-12 rounded-lg bg-transparent"
+            asChild
           >
-            See all cars
-            <ArrowRight className="ml-2 w-4 h-4" />
+            <Link to="/client/vehicles">
+              See all cars
+              <ArrowRight className="ml-2 w-4 h-4" />
+            </Link>
           </Button>
         </div>
       </HeroBackground>

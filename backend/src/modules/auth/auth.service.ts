@@ -44,13 +44,13 @@ export class AuthService {
       });
 
     if (profileError) {
-      console.error('Profile creation error:', profileError);
+      // ROLLBACK: Delete the auth user if profile creation fails
       await this.supabase.auth.admin.deleteUser(userId);
-      throw new InternalServerErrorException('Failed to create user profile');
+      throw new InternalServerErrorException(`Failed to create user profile: ${profileError.message}`);
     }
 
     if (!shouldAutoConfirm) {
-      const redirectUrl = process.env.EMAIL_VERIFICATION_REDIRECT_URL || 'http://localhost:3000/verify-email';
+      const redirectUrl = process.env.EMAIL_VERIFICATION_REDIRECT_URL || 'http://localhost:8000/verify-email';
       await this.supabase.auth.resend({
         type: 'signup',
         email: dto.email,
@@ -163,7 +163,7 @@ export class AuthService {
   }
 
   async forgotPassword(dto: ForgotPasswordDto) {
-    const redirectUrl = process.env.PASSWORD_RESET_REDIRECT_URL || 'http://localhost:3000/reset-password';
+    const redirectUrl = process.env.PASSWORD_RESET_REDIRECT_URL || 'http://localhost:8000/reset-password';
 
     const { data, error } = await this.supabase.auth.resetPasswordForEmail(dto.email, {
       redirectTo: redirectUrl,
@@ -225,7 +225,7 @@ export class AuthService {
   }
 
   async resendVerificationEmail(email: string) {
-    const redirectUrl = process.env.EMAIL_VERIFICATION_REDIRECT_URL || 'http://localhost:3000/verify-email';
+    const redirectUrl = process.env.EMAIL_VERIFICATION_REDIRECT_URL || 'http://localhost:8000/verify-email';
 
     const { data, error } = await this.supabase.auth.resend({
       type: 'signup',
