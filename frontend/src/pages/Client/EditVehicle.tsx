@@ -1,114 +1,377 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import Header from "@/components/Client/Header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
-import { Calendar } from "@/components/ui/calendar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Settings, Fuel, Wind, Users, Gauge, CarIcon, Check } from "lucide-react"
+import { Settings, Fuel, Wind, Users, CarIcon, Check, Loader2, Upload, X } from "lucide-react"
 import ClientFooter from "@/components/Client/Footer"
+import { carsApi, type Car, type CreateCarDto } from "@/services/carsApi"
+import { useToast } from "@/hooks/use-toast"
+
+const categories = [
+  { value: "Sedan", label: "Sedan" },
+  { value: "SUV", label: "SUV" },
+  { value: "Sport", label: "Sport" },
+  { value: "Van", label: "Van" },
+  { value: "Pickup", label: "Pickup" },
+  { value: "Luxury", label: "Luxury" },
+]
+
+const transmissions = [
+  { value: "Automatic", label: "Automatic" },
+  { value: "Manual", label: "Manual" },
+]
+
+const fuelTypes = [
+  { value: "Petrol", label: "Petrol" },
+  { value: "Diesel", label: "Diesel" },
+  { value: "Electric", label: "Electric" },
+  { value: "Hybrid", label: "Hybrid" },
+]
+
+const colors = [
+  { value: "Black", label: "Black" },
+  { value: "White", label: "White" },
+  { value: "Silver", label: "Silver" },
+  { value: "Red", label: "Red" },
+  { value: "Blue", label: "Blue" },
+  { value: "Gray", label: "Gray" },
+]
+
+const statusOptions = [
+  { value: "available", label: "Available" },
+  { value: "rented", label: "Rented" },
+  { value: "maintenance", label: "Maintenance" },
+]
 
 export default function EditVehicle() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [date, setDate] = useState<Date | undefined>(new Date())
-  const [equipment, setEquipment] = useState({
-    abs: true,
+  const { toast } = useToast()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [vehicle, setVehicle] = useState<Car | null>(null)
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    make: "",
+    model: "",
+    year: new Date().getFullYear(),
+    licensePlate: "",
+    category: "",
+    pricePerDay: 0,
+    depositAmount: 0,
+    transmission: "",
+    fuelType: "",
+    seats: 5,
+    color: "",
+    status: "available",
+  })
+  
+  // Image state
+  const [primaryImage, setPrimaryImage] = useState<File | null>(null)
+  const [primaryImagePreview, setPrimaryImagePreview] = useState<string | null>(null)
+  
+  // Features state
+  const [features, setFeatures] = useState({
+    abs: false,
     airBags: false,
     cruiseControl: false,
     airConditioner: false,
+    bluetooth: false,
+    gps: false,
   })
 
-  const bookings = [
-    { car: "BMW 5 Series", customer: "John Smith", days: "-4 Days", status: "ongoing" },
-    { car: "BMW 5 Series", customer: "John Smith", days: "+5 Days", status: "confirmed" },
-    { car: "BMW 5 Series", customer: "John Smith", days: "+8 Days", status: "confirmed" },
-  ]
+  // Fetch vehicle data
+  useEffect(() => {
+    const fetchVehicle = async () => {
+      if (!id) return
+      
+      setIsLoading(true)
+      try {
+        const data = await carsApi.getCarById(id)
+        if (data) {
+          setVehicle(data)
+          
+          // Populate form
+          setFormData({
+            make: data.make || "",
+            model: data.model || "",
+            year: data.year || new Date().getFullYear(),
+            licensePlate: data.license_plate || "",
+            category: data.category || "",
+            pricePerDay: data.price_per_day || 0,
+            depositAmount: data.deposit_amount || 0,
+            transmission: data.transmission || "",
+            fuelType: data.fuel_type || "",
+            seats: data.seats || 5,
+            color: data.color || "",
+            status: data.status || "available",
+          })
+          
+          // Set image preview
+          if (data.primary_image_url) {
+            setPrimaryImagePreview(data.primary_image_url)
+          }
+          
+          // Parse features
+          const carFeatures = Array.isArray(data.features) 
+            ? data.features 
+            : (typeof data.features === 'string' ? JSON.parse(data.features || '[]') : [])
+          
+          setFeatures({
+            abs: carFeatures.includes('ABS'),
+            airBags: carFeatures.includes('Air Bags'),
+            cruiseControl: carFeatures.includes('Cruise Control'),
+            airConditioner: carFeatures.includes('Air Conditioner'),
+            bluetooth: carFeatures.includes('Bluetooth'),
+            gps: carFeatures.includes('GPS Navigation'),
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching vehicle:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load vehicle data.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchVehicle()
+  }, [id])
+
+  // Handle input change
+  const handleChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  // Handle image change
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setPrimaryImage(file)
+      setPrimaryImagePreview(URL.createObjectURL(file))
+    }
+  }
+
+  // Get selected features as array
+  const getFeaturesList = (): string[] => {
+    const featuresList: string[] = []
+    if (features.abs) featuresList.push("ABS")
+    if (features.airBags) featuresList.push("Air Bags")
+    if (features.cruiseControl) featuresList.push("Cruise Control")
+    if (features.airConditioner) featuresList.push("Air Conditioner")
+    if (features.bluetooth) featuresList.push("Bluetooth")
+    if (features.gps) featuresList.push("GPS Navigation")
+    return featuresList
+  }
+
+  // Submit form
+  const handleSubmit = async () => {
+    if (!id) return
+
+    setIsSubmitting(true)
+    try {
+      const updateData: Partial<CreateCarDto> = {
+        make: formData.make,
+        model: formData.model,
+        year: formData.year,
+        licensePlate: formData.licensePlate,
+        category: formData.category,
+        pricePerDay: formData.pricePerDay,
+        depositAmount: formData.depositAmount,
+        transmission: formData.transmission || undefined,
+        fuelType: formData.fuelType || undefined,
+        seats: formData.seats,
+        color: formData.color || undefined,
+        features: getFeaturesList(),
+      }
+
+      const result = await carsApi.updateCar(
+        id,
+        updateData,
+        primaryImage || undefined
+      )
+
+      if (result) {
+        // Also update status if changed
+        if (formData.status !== vehicle?.status) {
+          await carsApi.updateCarStatus(id, formData.status)
+        }
+        
+        toast({
+          title: "Success!",
+          description: "Vehicle updated successfully.",
+        })
+        navigate(`/client/vehicles/${id}`)
+      } else {
+        throw new Error("Failed to update")
+      }
+    } catch (error) {
+      console.error('Error updating vehicle:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update vehicle.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-12 h-12 animate-spin text-[#DC2626]" />
+        </main>
+        <ClientFooter />
+      </div>
+    )
+  }
+
+  if (!vehicle) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1 flex flex-col items-center justify-center">
+          <CarIcon className="w-20 h-20 text-muted-foreground/30 mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Vehicle Not Found</h2>
+          <Button onClick={() => navigate('/client/vehicles')}>Back to Vehicles</Button>
+        </main>
+        <ClientFooter />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
-        <h1 className="text-4xl font-bold mb-8">Edit car information</h1>
+        <h1 className="text-4xl font-bold mb-8">Edit Vehicle</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column */}
           <div className="lg:col-span-1 space-y-6">
             {/* Basic Info */}
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Name</label>
-                <Input placeholder="Name" defaultValue="BMW" />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Type</label>
-                <Select defaultValue="sedan">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sedan">Sedan</SelectItem>
-                    <SelectItem value="suv">SUV</SelectItem>
-                    <SelectItem value="pickup">Pickup</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+            <Card className="p-6 border rounded-xl">
+              <h3 className="font-bold text-lg mb-4">Basic Information</h3>
+              <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Price</label>
-                  <Input type="number" placeholder="00" defaultValue="25" />
-                  <span className="text-xs text-muted-foreground">$/day</span>
+                  <label className="text-sm font-medium mb-2 block">Make/Brand</label>
+                  <Input 
+                    placeholder="e.g., Toyota" 
+                    value={formData.make}
+                    onChange={(e) => handleChange("make", e.target.value)}
+                  />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Brand</label>
-                  <Select defaultValue="bmw">
+                  <label className="text-sm font-medium mb-2 block">Model</label>
+                  <Input 
+                    placeholder="e.g., Camry" 
+                    value={formData.model}
+                    onChange={(e) => handleChange("model", e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Year</label>
+                    <Input 
+                      type="number" 
+                      value={formData.year}
+                      onChange={(e) => handleChange("year", parseInt(e.target.value))}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">License Plate</label>
+                    <Input 
+                      value={formData.licensePlate}
+                      onChange={(e) => handleChange("licensePlate", e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Category</label>
+                  <Select value={formData.category} onValueChange={(v) => handleChange("category", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Price/Day ($)</label>
+                    <Input 
+                      type="number" 
+                      value={formData.pricePerDay}
+                      onChange={(e) => handleChange("pricePerDay", parseFloat(e.target.value))}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Deposit ($)</label>
+                    <Input 
+                      type="number" 
+                      value={formData.depositAmount}
+                      onChange={(e) => handleChange("depositAmount", parseFloat(e.target.value))}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Status</label>
+                  <Select value={formData.status} onValueChange={(v) => handleChange("status", v)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="bmw">BMW</SelectItem>
-                      <SelectItem value="mercedes">Mercedes</SelectItem>
-                      <SelectItem value="toyota">Toyota</SelectItem>
+                      {statusOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Car Image */}
             <Card className="p-6 border rounded-xl">
-              <div className="w-full h-48 bg-muted rounded-lg mb-4 flex items-center justify-center">
-                <CarIcon className="w-32 h-32 text-muted-foreground" />
+              <h3 className="font-bold text-lg mb-4">Vehicle Image</h3>
+              <div 
+                className="w-full h-48 bg-muted rounded-lg mb-4 flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors overflow-hidden"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {primaryImagePreview ? (
+                  <img src={primaryImagePreview} alt="Vehicle" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="text-center">
+                    <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Click to change image</p>
+                  </div>
+                )}
               </div>
-
-              {/* Image Gallery */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="aspect-square bg-muted rounded-lg" />
-                <div className="aspect-square bg-muted rounded-lg" />
-                <div className="aspect-square bg-muted/50 rounded-lg flex items-center justify-center text-muted-foreground text-3xl cursor-pointer hover:bg-muted transition-colors">
-                  +
-                </div>
-              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
             </Card>
-
-            {/* Availability */}
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <h4 className="font-semibold">Availability</h4>
-                <button className="text-sm text-muted-foreground">›</button>
-              </div>
-              <Calendar mode="single" selected={date} onSelect={setDate} className="rounded-md border w-full" />
-              <div className="mt-3">
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" className="rounded" />
-                  <span>Always available</span>
-                </label>
-              </div>
-            </div>
           </div>
 
           {/* Right Column */}
@@ -116,195 +379,115 @@ export default function EditVehicle() {
             {/* Technical Specification */}
             <Card className="p-6 border rounded-xl">
               <h3 className="font-bold text-xl mb-6">Technical Specification</h3>
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                 <div>
                   <div className="flex justify-center mb-2">
                     <Settings className="w-8 h-8 text-muted-foreground" />
                   </div>
-                  <p className="font-medium mb-2 text-center">Gear Box</p>
-                  <Input placeholder="..." className="text-center" />
+                  <p className="font-medium mb-2 text-center">Transmission</p>
+                  <Select value={formData.transmission} onValueChange={(v) => handleChange("transmission", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {transmissions.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <div className="flex justify-center mb-2">
                     <Fuel className="w-8 h-8 text-muted-foreground" />
                   </div>
-                  <p className="font-medium mb-2 text-center">Fuel</p>
-                  <Input placeholder="..." className="text-center" />
-                </div>
-                <div>
-                  <div className="flex justify-center mb-2">
-                    <svg
-                      className="w-8 h-8 text-muted-foreground"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                      />
-                    </svg>
-                  </div>
-                  <p className="font-medium mb-2 text-center">Doors</p>
-                  <Input type="number" placeholder="0" className="text-center" />
-                </div>
-                <div>
-                  <div className="flex justify-center mb-2">
-                    <Wind className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <p className="font-medium mb-2 text-center">Air Conditioner</p>
-                  <Input placeholder="Yes/No" className="text-center" />
+                  <p className="font-medium mb-2 text-center">Fuel Type</p>
+                  <Select value={formData.fuelType} onValueChange={(v) => handleChange("fuelType", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fuelTypes.map((f) => (
+                        <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <div className="flex justify-center mb-2">
                     <Users className="w-8 h-8 text-muted-foreground" />
                   </div>
                   <p className="font-medium mb-2 text-center">Seats</p>
-                  <Input type="number" placeholder="3" className="text-center" defaultValue="3" />
-                </div>
-                <div>
-                  <div className="flex justify-center mb-2">
-                    <Gauge className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <p className="font-medium mb-2 text-center">Distance</p>
-                  <Input placeholder="0" className="text-center" />
+                  <Input 
+                    type="number" 
+                    className="text-center"
+                    value={formData.seats}
+                    onChange={(e) => handleChange("seats", parseInt(e.target.value))}
+                  />
                 </div>
               </div>
             </Card>
 
-            {/* Car Equipment */}
+            {/* Car Features */}
             <Card className="p-6 border rounded-xl">
-              <h3 className="font-bold text-xl mb-4">Car Equipment</h3>
-              <div className="grid grid-cols-2 gap-6">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${equipment.abs ? "bg-[#DC2626]" : "bg-gray-300"}`}
-                  >
-                    {equipment.abs && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                  <span>ABS</span>
-                  <input
-                    type="checkbox"
-                    checked={equipment.abs}
-                    onChange={(e) => setEquipment({ ...equipment, abs: e.target.checked })}
-                    className="sr-only"
-                  />
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${equipment.airBags ? "bg-[#DC2626]" : "bg-gray-300"}`}
-                  >
-                    {equipment.airBags && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                  <span>ABS</span>
-                  <input
-                    type="checkbox"
-                    checked={equipment.airBags}
-                    onChange={(e) => setEquipment({ ...equipment, airBags: e.target.checked })}
-                    className="sr-only"
-                  />
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${equipment.airBags ? "bg-[#DC2626]" : "bg-gray-300"}`}
-                  >
-                    {equipment.airBags && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                  <span>Air Bags</span>
-                  <input
-                    type="checkbox"
-                    checked={equipment.airBags}
-                    onChange={(e) => setEquipment({ ...equipment, airBags: e.target.checked })}
-                    className="sr-only"
-                  />
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${equipment.cruiseControl ? "bg-[#DC2626]" : "bg-gray-300"}`}
-                  >
-                    {equipment.cruiseControl && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                  <span>Cruise Control</span>
-                  <input
-                    type="checkbox"
-                    checked={equipment.cruiseControl}
-                    onChange={(e) => setEquipment({ ...equipment, cruiseControl: e.target.checked })}
-                    className="sr-only"
-                  />
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${equipment.airConditioner ? "bg-[#DC2626]" : "bg-gray-300"}`}
-                  >
-                    {equipment.airConditioner && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                  <span>Air Conditioner</span>
-                  <input
-                    type="checkbox"
-                    checked={equipment.airConditioner}
-                    onChange={(e) => setEquipment({ ...equipment, airConditioner: e.target.checked })}
-                    className="sr-only"
-                  />
-                </label>
+              <h3 className="font-bold text-xl mb-4">Car Features</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {Object.entries(features).map(([key, value]) => (
+                  <label key={key} className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-muted transition-colors">
+                    <div
+                      className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${value ? "bg-[#DC2626]" : "bg-gray-300"}`}
+                    >
+                      {value && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                    <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                    <input
+                      type="checkbox"
+                      checked={value}
+                      onChange={(e) => setFeatures({ ...features, [key]: e.target.checked })}
+                      className="sr-only"
+                    />
+                  </label>
+                ))}
               </div>
             </Card>
 
             {/* Color */}
             <Card className="p-6 border rounded-xl">
               <h3 className="font-bold text-xl mb-4">Color</h3>
-              <Select defaultValue="black">
-                <SelectTrigger className="w-48">
-                  <SelectValue />
+              <Select value={formData.color} onValueChange={(v) => handleChange("color", v)}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="Select color" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="black">Black</SelectItem>
-                  <SelectItem value="white">White</SelectItem>
-                  <SelectItem value="silver">Silver</SelectItem>
+                  {colors.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </Card>
 
-            {/* Bookings */}
-            <Card className="p-6 border rounded-xl">
-              <h3 className="font-bold text-xl mb-4">Bookings</h3>
-              <div className="space-y-3">
-                {bookings.map((booking, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                    <div className="flex-1">
-                      <p className="font-bold">{booking.car}</p>
-                      <p className="text-sm text-muted-foreground">{booking.customer}</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm">{booking.days}</span>
-                      <span
-                        className={`px-4 py-1 rounded-full text-sm font-medium ${
-                          booking.status === "ongoing" ? "bg-[#DC2626] text-white" : "bg-green-100 text-green-700"
-                        }`}
-                      >
-                        {booking.status}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="bg-[#DC2626] text-white hover:bg-[#B71C1C] border-0"
-                      >
-                        delete
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
             {/* Action Buttons */}
             <div className="flex gap-4">
-              <Button className="flex-1 bg-[#DC2626] hover:bg-[#B71C1C] text-white h-12 text-lg">
-                Confirm Changes
+              <Button
+                onClick={() => navigate(`/client/vehicles/${id}`)}
+                variant="outline"
+                className="flex-1 h-12 text-lg"
+                disabled={isSubmitting}
+              >
+                Cancel
               </Button>
-              <Button variant="outline" className="flex-1 h-12 text-lg border-2 bg-transparent">
-                Delete
+              <Button
+                onClick={handleSubmit}
+                className="flex-1 bg-[#DC2626] hover:bg-[#B71C1C] text-white h-12 text-lg"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
               </Button>
             </div>
           </div>

@@ -3,7 +3,18 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../common/providers/supabase.provider';
 import { EmailService } from '../email/email.service';
 
-export type NotificationType = 'info' | 'warning' | 'error' | 'success';
+export type NotificationType = 
+  | 'system_alert'
+  | 'reservation_created'
+  | 'reservation_confirmed'
+  | 'reservation_cancelled'
+  | 'reservation_completed'
+  | 'payment_received'
+  | 'payment_failed'
+  | 'payment_pending'
+  | 'maintenance_scheduled'
+  | 'car_available'
+  | 'car_unavailable';
 
 export interface CreateNotificationDto {
   userId: string;
@@ -127,9 +138,6 @@ export class NotificationsService {
       title: dto.title,
       message: dto.message,
       type: dto.type,
-      vehicle_name: dto.vehicleName ?? null,
-      customer_name: dto.customerName ?? null,
-      reservation_id: dto.reservationId ?? null,
       is_read: false,
     };
 
@@ -142,6 +150,7 @@ export class NotificationsService {
     if (error) {
       // Log but don't throw - notifications should not break main operations
       console.error(`Failed to create notification: ${error.message}`);
+      console.error('Payload:', payload);
       return null;
     }
 

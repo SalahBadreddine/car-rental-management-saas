@@ -65,11 +65,11 @@ export class CarsController {
    */
   @Get('statistics')
   @UseGuards(JwtAuthGuard)
-  async getStatistics(@CurrentUser() user: any) {
+  async getStatistics(@CurrentUser() user: any, @Query('locationId') locationId?: string) {
     if (user.role !== 'client_admin') {
       throw new ForbiddenException('Access denied: Admins only');
     }
-    return this.carsService.getStatistics(user.tenant_id);
+    return this.carsService.getStatistics(user.tenant_id, locationId);
   }
 
   @Post()

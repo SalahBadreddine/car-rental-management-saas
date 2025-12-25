@@ -89,10 +89,7 @@ export class PaymentsService {
         tenantId,
         title: 'Payment Received',
         message: `Your payment of ${dto.amount} DZD for ${vehicleName} has been recorded.`,
-        type: 'success',
-        vehicleName,
-        customerName: reservation.profiles.full_name || 'Customer',
-        reservationId: dto.reservationId,
+        type: 'payment_received',
       });
     }
 
