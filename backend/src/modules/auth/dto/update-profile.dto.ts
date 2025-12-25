@@ -1,16 +1,36 @@
-// src/auth/dto/update-profile.dto.ts
 import { IsOptional, IsString, IsDateString } from 'class-validator';
 
 export class UpdateProfileDto {
   @IsOptional()
   @IsString()
-  fullName?: string;
+  full_name?: string;
 
   @IsOptional()
   @IsString()
-  phoneNumber?: string;
+  phone_number?: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @IsOptional()
+  @IsString()
+  postal_code?: string;
+
+  @IsOptional()
+  @IsString()
+  driver_license_number?: string;
 
   @IsOptional()
   @IsDateString({}, { message: 'Driver license expiry must be a valid date' })
-  driverLicenseExpiry?: string;
+  driver_license_expiry?: string;
 }
+

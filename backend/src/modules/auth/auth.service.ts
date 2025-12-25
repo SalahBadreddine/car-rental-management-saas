@@ -270,30 +270,41 @@ export class AuthService {
   }
 
   async updateProfile(userId: string, data: UpdateProfileDto) {
-    if (data.driverLicenseExpiry && new Date(data.driverLicenseExpiry) < new Date()) {
-      throw new BadRequestException('Driver license expiry date must be in the future');
-    }
+  if (data.driver_license_expiry && new Date(data.driver_license_expiry) < new Date()) {
+    throw new BadRequestException('Driver license expiry date must be in the future');
+  }
 
-    const { error } = await this.supabase
-      .from('profiles')
-      .update({
-        full_name: data.fullName,
-        phone_number: data.phoneNumber,
-        driver_license_expiry: data.driverLicenseExpiry,
-      })
-      .eq('id', userId);
+  // Build update object with only provided fields
+  const updateData: Record<string, any> = {};
+  if (data.full_name !== undefined) updateData.full_name = data.full_name;
+  if (data.phone_number !== undefined) updateData.phone_number = data.phone_number;
+  if (data.address !== undefined) updateData.address = data.address;
+  if (data.city !== undefined) updateData.city = data.city;
+  if (data.country !== undefined) updateData.country = data.country;
+  if (data.postal_code !== undefined) updateData.postal_code = data.postal_code;
+  if (data.driver_license_number !== undefined) updateData.driver_license_number = data.driver_license_number;
+  if (data.driver_license_expiry !== undefined) updateData.driver_license_expiry = data.driver_license_expiry;
 
-    if (error) {
-      throw new BadRequestException(error.message);
-    }
+  if (Object.keys(updateData).length === 0) {
+    throw new BadRequestException('No fields to update');
+  }
 
-    const { data: updatedProfile } = await this.supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+  const { error } = await this.supabase
+    .from('profiles')
+    .update(updateData)
+    .eq('id', userId);
 
-    return updatedProfile;
+  if (error) {
+    throw new BadRequestException(error.message);
+  }
+
+  const { data: updatedProfile } = await this.supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+
+  return { data: updatedProfile };
   }
 
   //  Get user by ID (admin-only)

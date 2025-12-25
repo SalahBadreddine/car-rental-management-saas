@@ -128,11 +128,11 @@ export class CarsService {
     }>) ?? [];
   }
 
-  //  Get car statistics (admin only)
+  // Get car statistics (admin only)
   async getStatistics(tenantId?: string) {
     const { data, error } = await this.supabaseClient
       .from('cars')
-      .select('tenant_id, id, make, category, location, rental_count, status');
+      .select('tenant_id, id, make, category, location_id, rental_count, status');
 
     if (error || !data) throw new BadRequestException(error?.message || 'Failed to fetch cars');
 
@@ -141,7 +141,7 @@ export class CarsService {
       tenant_id: string | null;
       make: string;
       category: string;
-      location: string;
+      location_id: string;
       rental_count: number;
       status: string;
       [key: string]: any;
@@ -150,21 +150,21 @@ export class CarsService {
     const filteredCars = tenantId ? cars.filter(c => c.tenant_id === tenantId) : cars;
 
     const stats: {
-      totalCars: number;
-      byStatus: Record<string, number>;
-      byCategory: Record<string, number>;
-      byLocation: Record<string, number>;
-      averageRentalCount: number;
-      mostRented: { id: string; make: string; rental_count: number } | null;
-      leastRented: { id: string; make: string; rental_count: number } | null;
+      total_cars: number;
+      by_status: Record<string, number>;
+      by_category: Record<string, number>;
+      by_location_id: Record<string, number>;
+      average_rental_count: number;
+      most_rented: { id: string; make: string; rental_count: number } | null;
+      least_rented: { id: string; make: string; rental_count: number } | null;
     } = {
-      totalCars: filteredCars.length,
-      byStatus: {},
-      byCategory: {},
-      byLocation: {},
-      averageRentalCount: 0,
-      mostRented: null,
-      leastRented: null,
+      total_cars: filteredCars.length,
+      by_status: {},
+      by_category: {},
+      by_location_id: {},
+      average_rental_count: 0,
+      most_rented: null,
+      least_rented: null,
     };
 
     if (filteredCars.length > 0) {
@@ -172,28 +172,30 @@ export class CarsService {
 
       filteredCars.forEach(car => {
         totalRental += car.rental_count;
-        stats.byStatus[car.status] = (stats.byStatus[car.status] || 0) + 1;
-        stats.byCategory[car.category] = (stats.byCategory[car.category] || 0) + 1;
-        stats.byLocation[car.location] = (stats.byLocation[car.location] || 0) + 1;
+        stats.by_status[car.status] = (stats.by_status[car.status] || 0) + 1;
+        stats.by_category[car.category] = (stats.by_category[car.category] || 0) + 1;
+        if (car.location_id) {
+          stats.by_location_id[car.location_id] = (stats.by_location_id[car.location_id] || 0) + 1;
+        }
       });
 
-      stats.averageRentalCount = totalRental / filteredCars.length;
+      stats.average_rental_count = totalRental / filteredCars.length;
 
       const sortedByRental = [...filteredCars].sort((a, b) => b.rental_count - a.rental_count);
 
-      stats.mostRented = {
+      stats.most_rented = {
         id: sortedByRental[0].id,
         make: sortedByRental[0].make,
         rental_count: sortedByRental[0].rental_count,
       };
 
-      stats.leastRented = {
+      stats.least_rented = {
         id: sortedByRental[sortedByRental.length - 1].id,
         make: sortedByRental[sortedByRental.length - 1].make,
         rental_count: sortedByRental[sortedByRental.length - 1].rental_count,
       };
     }
 
-    return stats;
+    return { data: stats };
   }
 }
