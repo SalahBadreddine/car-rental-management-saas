@@ -1,4 +1,4 @@
-import { Inject, Injectable, BadRequestException, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, BadRequestException, InternalServerErrorException, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../common/providers/supabase.provider';
 import { SignupDto } from './dto/signup.dto';
@@ -8,6 +8,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class AuthService {
@@ -266,5 +267,62 @@ export class AuthService {
     return {
       message: 'Password changed successfully',
     };
+  }
+
+  async updateProfile(userId: string, data: UpdateProfileDto) {
+  if (data.driver_license_expiry && new Date(data.driver_license_expiry) < new Date()) {
+    throw new BadRequestException('Driver license expiry date must be in the future');
+  }
+
+  // Build update object with only provided fields
+  const updateData: Record<string, any> = {};
+  if (data.full_name !== undefined) updateData.full_name = data.full_name;
+  if (data.phone_number !== undefined) updateData.phone_number = data.phone_number;
+  if (data.address !== undefined) updateData.address = data.address;
+  if (data.city !== undefined) updateData.city = data.city;
+  if (data.country !== undefined) updateData.country = data.country;
+  if (data.postal_code !== undefined) updateData.postal_code = data.postal_code;
+  if (data.driver_license_number !== undefined) updateData.driver_license_number = data.driver_license_number;
+  if (data.driver_license_expiry !== undefined) updateData.driver_license_expiry = data.driver_license_expiry;
+
+  if (Object.keys(updateData).length === 0) {
+    throw new BadRequestException('No fields to update');
+  }
+
+  const { error } = await this.supabase
+    .from('profiles')
+    .update(updateData)
+    .eq('id', userId);
+
+  if (error) {
+    throw new BadRequestException(error.message);
+  }
+
+  const { data: updatedProfile } = await this.supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+
+  return { data: updatedProfile };
+  }
+
+  //  Get user by ID (admin-only)
+  async getUserById(userId: string, currentUser: any) {
+    if (currentUser.role !== 'client_admin') {
+      throw new ForbiddenException('Access denied: Admins only');
+    }
+
+    const { data: profile, error } = await this.supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error || !profile) {
+      throw new BadRequestException('User not found');
+    }
+
+    return profile;
   }
 }

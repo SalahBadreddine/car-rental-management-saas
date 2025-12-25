@@ -11,11 +11,14 @@ import {
   UseGuards,
   UseInterceptors,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { CarsService } from './cars.service';
 import { CreateCarRequestDto, CreateCarDto } from './dto/create-car.dto';
 import { UpdateCarDto } from './dto/update-car.dto';
+import { SearchCarsDto } from './dto/search-cars.dto';
+import { FeaturedCarsDto } from './dto/featured-cars.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { StorageService } from '../storage/storage.service';
@@ -27,6 +30,47 @@ export class CarsController {
     private readonly carsService: CarsService,
     private readonly storageService: StorageService,
   ) {}
+
+  /**
+   * Search cars with filters
+   * GET /cars/search
+   */
+  @Get('search')
+  @UseGuards(JwtAuthGuard)
+  async search(
+    @Query() dto: SearchCarsDto,
+    @CurrentUser() user: any,
+  ) {
+    if (!dto.tenantId) {
+      if (!user?.tenant_id) {
+        throw new BadRequestException('Tenant ID is required');
+      }
+      dto.tenantId = user.tenant_id;
+    }
+    return this.carsService.search(dto);
+  }
+
+  /**
+   * Get featured cars
+   * GET /cars/featured
+   */
+  @Get('featured')
+  async getFeatured(@Query() query: FeaturedCarsDto) {
+    return this.carsService.getFeatured(query);
+  }
+
+  /**
+   * Get car statistics (Admin only)
+   * GET /cars/statistics
+   */
+  @Get('statistics')
+  @UseGuards(JwtAuthGuard)
+  async getStatistics(@CurrentUser() user: any) {
+    if (user.role !== 'client_admin') {
+      throw new ForbiddenException('Access denied: Admins only');
+    }
+    return this.carsService.getStatistics(user.tenant_id);
+  }
 
   @Post()
   @UseGuards(JwtAuthGuard)
