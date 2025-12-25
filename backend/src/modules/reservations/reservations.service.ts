@@ -2,12 +2,14 @@ import { Inject, Injectable, BadRequestException, InternalServerErrorException }
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../common/providers/supabase.provider';
 import { CreateReservationDto } from './dto/create-reservation.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ReservationsService {
   constructor(
     @Inject(SUPABASE_CLIENT)
     private readonly supabaseClient: SupabaseClient,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(dto: CreateReservationDto, tenantId: string, customerId: string) {
@@ -68,6 +70,38 @@ export class ReservationsService {
     if (error) {
       throw new InternalServerErrorException(`Failed to create reservation: ${error.message}`);
     }
+
+    // Get car and customer details for notification
+    const { data: carDetails } = await this.supabaseClient
+      .from('cars')
+      .select('make, model')
+      .eq('id', dto.carId)
+      .single();
+
+    const { data: customerDetails } = await this.supabaseClient
+      .from('profiles')
+      .select('full_name')
+      .eq('id', customerId)
+      .single();
+
+    const vehicleName = carDetails ? `${carDetails.make} ${carDetails.model}` : 'Unknown Vehicle';
+    const customerName = customerDetails?.full_name ?? 'Customer';
+
+    // Notify tenant admins about new reservation
+    await this.notificationsService.notifyTenantAdmins(
+      tenantId,
+      'New Reservation',
+      `A new reservation has been created for ${vehicleName}. Please review and confirm.`,
+      'info',
+      {
+        vehicleName,
+        customerName,
+        reservationId: data.id,
+        startDate: dto.startDate,
+        endDate: dto.endDate,
+        totalPrice: totalPrice,
+      },
+    );
 
     return data;
   }
@@ -130,11 +164,52 @@ export class ReservationsService {
       .update({ status })
       .eq('id', id)
       .eq('tenant_id', tenantId)
-      .select('*')
+      .select('*, cars(make, model), profiles:customer_id(id, full_name)')
       .single();
 
     if (error) {
       throw new InternalServerErrorException(`Failed to update reservation: ${error.message}`);
+    }
+
+    // Send notification to customer based on status change
+    if (data && data.profiles?.id) {
+      const vehicleName = data.cars ? `${data.cars.make} ${data.cars.model}` : 'your vehicle';
+      const customerName = data.profiles?.full_name ?? 'Customer';
+      
+      let notificationTitle = '';
+      let notificationMessage = '';
+      let notificationType: 'info' | 'warning' | 'error' | 'success' = 'info';
+
+      switch (status) {
+        case 'confirmed':
+          notificationTitle = 'Reservation Confirmed';
+          notificationMessage = `Your reservation for ${vehicleName} has been confirmed.`;
+          notificationType = 'success';
+          break;
+        case 'cancelled':
+          notificationTitle = 'Reservation Cancelled';
+          notificationMessage = `Your reservation for ${vehicleName} has been cancelled.`;
+          notificationType = 'warning';
+          break;
+        case 'completed':
+          notificationTitle = 'Rental Completed';
+          notificationMessage = `Your rental of ${vehicleName} has been completed. Thank you!`;
+          notificationType = 'success';
+          break;
+      }
+
+      if (notificationTitle) {
+        await this.notificationsService.createNotification({
+          userId: data.profiles.id,
+          tenantId,
+          title: notificationTitle,
+          message: notificationMessage,
+          type: notificationType,
+          vehicleName,
+          customerName,
+          reservationId: data.id,
+        });
+      }
     }
 
     return data;
@@ -182,4 +257,131 @@ export class ReservationsService {
 
     return { id: data?.id, message: 'Reservation cancelled successfully' };
   }
+
+  /**
+   * Get reservation statistics for dashboard (Admin only)
+   */
+  async getStatistics(tenantId: string) {
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID is required.');
+    }
+
+    // Get all reservations for this tenant
+    const { data: reservations, error } = await this.supabaseClient
+      .from('reservations')
+      .select('id, start_date, end_date, total_price, status, created_at')
+      .eq('tenant_id', tenantId);
+
+    if (error) {
+      throw new InternalServerErrorException(`Failed to fetch statistics: ${error.message}`);
+    }
+
+    const allReservations = reservations ?? [];
+
+    // Calculate total reservations
+    const total_reservations = allReservations.length;
+
+    // Calculate revenue by month
+    const revenueMap: Record<string, number> = {};
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    allReservations.forEach((r) => {
+      if (r.status === 'completed' || r.status === 'confirmed') {
+        const date = new Date(r.created_at);
+        const monthKey = months[date.getMonth()];
+        revenueMap[monthKey] = (revenueMap[monthKey] || 0) + Number(r.total_price);
+      }
+    });
+
+    const revenue_by_month = Object.entries(revenueMap).map(([month, revenue]) => ({
+      month,
+      revenue,
+    }));
+
+    // Calculate average duration
+    let totalDays = 0;
+    let validCount = 0;
+    allReservations.forEach((r) => {
+      const start = new Date(r.start_date);
+      const end = new Date(r.end_date);
+      const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      if (days > 0) {
+        totalDays += days;
+        validCount++;
+      }
+    });
+    const average_duration = validCount > 0 ? Math.round((totalDays / validCount) * 10) / 10 : 0;
+
+    // Count by status
+    const by_status: Record<string, number> = {};
+    allReservations.forEach((r) => {
+      by_status[r.status] = (by_status[r.status] || 0) + 1;
+    });
+
+    return {
+      total_reservations,
+      revenue_by_month,
+      average_duration,
+      by_status,
+    };
+  }
+
+  /**
+   * Get all reservations for a specific customer (Admin only)
+   */
+  async findByCustomerId(customerId: string, tenantId: string) {
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID is required.');
+    }
+
+    if (!customerId) {
+      throw new BadRequestException('Customer ID is required.');
+    }
+
+    const { data, error } = await this.supabaseClient
+      .from('reservations')
+      .select(`
+        *,
+        cars (id, make, model, year, primary_image_url, price_per_day)
+      `)
+      .eq('tenant_id', tenantId)
+      .eq('customer_id', customerId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new InternalServerErrorException(`Failed to fetch customer reservations: ${error.message}`);
+    }
+
+    return data ?? [];
+  }
+
+  /**
+   * Get all reservations for a specific car (Admin only)
+   */
+  async findByCarId(carId: string, tenantId: string) {
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID is required.');
+    }
+
+    if (!carId) {
+      throw new BadRequestException('Car ID is required.');
+    }
+
+    const { data, error } = await this.supabaseClient
+      .from('reservations')
+      .select(`
+        *,
+        profiles:customer_id (id, full_name, phone_number)
+      `)
+      .eq('tenant_id', tenantId)
+      .eq('car_id', carId)
+      .order('start_date', { ascending: false });
+
+    if (error) {
+      throw new InternalServerErrorException(`Failed to fetch car reservations: ${error.message}`);
+    }
+
+    return data ?? [];
+  }
 }
+

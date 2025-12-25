@@ -1,0 +1,28 @@
+meta {
+  name: Get By Car (Admin)
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/reservations/car/:car_id
+  body: none
+  auth: bearer
+}
+
+params:path {
+  car_id: CAR_UUID_HERE
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+docs {
+  Get booking history for a specific car.
+  Auth: Required (Admin only)
+}

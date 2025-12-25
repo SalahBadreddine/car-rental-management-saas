@@ -1,0 +1,31 @@
+meta {
+  name: Get Notifications
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/notifications
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~is_read: false
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+docs {
+  Get all notifications for the current user.
+  Query Params:
+  - is_read (optional): true or false to filter
+
+  Returns: data (array), total, unread_count
+}

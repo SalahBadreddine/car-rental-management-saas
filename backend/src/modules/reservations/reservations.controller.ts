@@ -53,6 +53,67 @@ export class ReservationsController {
   }
 
   /**
+   * Get reservation statistics for dashboard (Admin only)
+   * GET /reservations/statistics
+   * NOTE: Must be declared BEFORE :id route to avoid path conflict
+   */
+  @Get('statistics')
+  @UseGuards(JwtAuthGuard)
+  async getStatistics(@CurrentUser() user: any) {
+    if (!user?.tenant_id) {
+      throw new BadRequestException('Tenant context is required.');
+    }
+
+    if (user.role !== 'client_admin') {
+      throw new BadRequestException('Only admins can access reservation statistics.');
+    }
+
+    return this.reservationsService.getStatistics(user.tenant_id);
+  }
+
+  /**
+   * Get all reservations for a specific customer (Admin only)
+   * GET /reservations/customer/:customer_id
+   */
+  @Get('customer/:customer_id')
+  @UseGuards(JwtAuthGuard)
+  async findByCustomerId(
+    @Param('customer_id') customerId: string,
+    @CurrentUser() user: any,
+  ) {
+    if (!user?.tenant_id) {
+      throw new BadRequestException('Tenant context is required.');
+    }
+
+    if (user.role !== 'client_admin') {
+      throw new BadRequestException('Only admins can view customer reservations.');
+    }
+
+    return this.reservationsService.findByCustomerId(customerId, user.tenant_id);
+  }
+
+  /**
+   * Get all reservations for a specific car (Admin only)
+   * GET /reservations/car/:car_id
+   */
+  @Get('car/:car_id')
+  @UseGuards(JwtAuthGuard)
+  async findByCarId(
+    @Param('car_id') carId: string,
+    @CurrentUser() user: any,
+  ) {
+    if (!user?.tenant_id) {
+      throw new BadRequestException('Tenant context is required.');
+    }
+
+    if (user.role !== 'client_admin') {
+      throw new BadRequestException('Only admins can view car reservations.');
+    }
+
+    return this.reservationsService.findByCarId(carId, user.tenant_id);
+  }
+
+  /**
    * Get single reservation details
    * GET /reservations/:id
    */

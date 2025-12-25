@@ -1,0 +1,19 @@
+meta {
+  name: Delete Payment
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/payments/:id
+  body: none
+  auth: bearer
+}
+
+params:path {
+  id: your-payment-uuid-here
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
