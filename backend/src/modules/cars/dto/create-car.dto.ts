@@ -1,5 +1,5 @@
 import { IsString, IsInt, IsNumber, IsOptional, IsArray, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 export class CreateCarRequestDto {
   @IsString()
@@ -51,6 +51,12 @@ export class CreateCarRequestDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
+  @Transform(({ value }) => {
+    // Handle both single string and array from FormData
+    if (typeof value === 'string') return [value];
+    if (Array.isArray(value)) return value;
+    return [];
+  })
   features?: string[];
 
   @IsOptional()

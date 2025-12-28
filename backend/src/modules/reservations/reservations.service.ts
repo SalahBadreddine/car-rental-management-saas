@@ -12,11 +12,7 @@ export class ReservationsService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  async create(dto: CreateReservationDto, tenantId: string, customerId: string) {
-    if (!tenantId) {
-      throw new BadRequestException('Tenant ID is required to create a reservation.');
-    }
-
+  async create(dto: CreateReservationDto, tenantId: string | null, customerId: string) {
     if (!customerId) {
       throw new BadRequestException('Customer ID is required to create a reservation.');
     }
@@ -32,7 +28,11 @@ export class ReservationsService {
       throw new BadRequestException('Car not found.');
     }
 
-    if (car.tenant_id !== tenantId) {
+    // If user has tenant_id (admin), verify it matches the car's tenant
+    // If user doesn't have tenant_id (customer), use the car's tenant
+    const reservationTenantId = tenantId || car.tenant_id;
+    
+    if (tenantId && car.tenant_id !== tenantId) {
       throw new BadRequestException('Car does not belong to this tenant.');
     }
 
@@ -52,7 +52,7 @@ export class ReservationsService {
     const totalPrice = dto.totalPrice ?? (days * car.price_per_day);
 
     const payload = {
-      tenant_id: tenantId,
+      tenant_id: reservationTenantId,
       car_id: dto.carId,
       customer_id: customerId,
       start_date: dto.startDate,
@@ -89,10 +89,10 @@ export class ReservationsService {
 
     // Notify tenant admins about new reservation
     await this.notificationsService.notifyTenantAdmins(
-      tenantId,
+      reservationTenantId,
       'New Reservation',
       `A new reservation has been created for ${vehicleName}. Please review and confirm.`,
-      'info',
+      'reservation_created',
       {
         vehicleName,
         customerName,
@@ -106,20 +106,43 @@ export class ReservationsService {
     return data;
   }
 
-  async findAllByTenant(tenantId: string) {
+  async findAllByTenant(
+    tenantId: string,
+    filters?: {
+      status?: string;
+      customerId?: string;
+      carId?: string;
+      pickupLocationId?: string;
+    },
+  ) {
     if (!tenantId) {
       throw new BadRequestException('Tenant ID is required.');
     }
 
-    const { data, error } = await this.supabaseClient
+    // Start building query
+    // We use cars!inner if filtering by location to ensure we only get reservations
+    // for cars that match the location filter.
+    const selectFields = filters?.pickupLocationId 
+      ? '*, cars!inner(id, make, model, year, primary_image_url, location_id), profiles:customer_id(id, full_name, phone_number)'
+      : '*, cars(id, make, model, year, primary_image_url), profiles:customer_id(id, full_name, phone_number)';
+    
+    let query = this.supabaseClient
       .from('reservations')
-      .select(`
-        *,
-        cars (id, make, model, year, primary_image_url),
-        profiles:customer_id (id, full_name, phone_number)
-      `)
+      .select(selectFields)
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false });
+
+    if (filters?.status) query = query.eq('status', filters.status);
+    if (filters?.customerId) query = query.eq('customer_id', filters.customerId);
+    if (filters?.carId) query = query.eq('car_id', filters.carId);
+    
+    // Filter by car's location (only if specified)
+    if (filters?.pickupLocationId) {
+      query = query.eq('cars.location_id', filters.pickupLocationId);
+    }
+    // If pickupLocationId is undefined/null, show all locations
+
+    const { data, error } = await query;
 
     if (error) {
       throw new InternalServerErrorException(`Failed to fetch reservations: ${error.message}`);
@@ -178,36 +201,33 @@ export class ReservationsService {
       
       let notificationTitle = '';
       let notificationMessage = '';
-      let notificationType: 'info' | 'warning' | 'error' | 'success' = 'info';
+      let notificationType: 'reservation_confirmed' | 'reservation_cancelled' | 'reservation_completed' | null = null;
 
       switch (status) {
         case 'confirmed':
           notificationTitle = 'Reservation Confirmed';
           notificationMessage = `Your reservation for ${vehicleName} has been confirmed.`;
-          notificationType = 'success';
+          notificationType = 'reservation_confirmed';
           break;
         case 'cancelled':
           notificationTitle = 'Reservation Cancelled';
           notificationMessage = `Your reservation for ${vehicleName} has been cancelled.`;
-          notificationType = 'warning';
+          notificationType = 'reservation_cancelled';
           break;
         case 'completed':
           notificationTitle = 'Rental Completed';
           notificationMessage = `Your rental of ${vehicleName} has been completed. Thank you!`;
-          notificationType = 'success';
+          notificationType = 'reservation_completed';
           break;
       }
 
-      if (notificationTitle) {
+      if (notificationTitle && notificationType) {
         await this.notificationsService.createNotification({
           userId: data.profiles.id,
           tenantId,
           title: notificationTitle,
           message: notificationMessage,
           type: notificationType,
-          vehicleName,
-          customerName,
-          reservationId: data.id,
         });
       }
     }
@@ -261,22 +281,34 @@ export class ReservationsService {
   /**
    * Get reservation statistics for dashboard (Admin only)
    */
-  async getStatistics(tenantId: string) {
+  async getStatistics(tenantId: string, locationId?: string) {
     if (!tenantId) {
       throw new BadRequestException('Tenant ID is required.');
     }
 
-    // Get all reservations for this tenant
-    const { data: reservations, error } = await this.supabaseClient
+    // Get reservations for this tenant (optionally filtered by location)
+    // If locationId is undefined, show all locations for the tenant
+    let query = this.supabaseClient
       .from('reservations')
-      .select('id, start_date, end_date, total_price, status, created_at')
+      .select(
+        locationId 
+          ? 'id, start_date, end_date, total_price, status, created_at, cars!inner(location_id)'
+          : 'id, start_date, end_date, total_price, status, created_at'
+      )
       .eq('tenant_id', tenantId);
+
+    // Only filter by location if specified (undefined = all locations)
+    if (locationId) {
+      query = query.eq('cars.location_id', locationId);
+    }
+    
+    const { data: reservations, error } = await query;
 
     if (error) {
       throw new InternalServerErrorException(`Failed to fetch statistics: ${error.message}`);
     }
 
-    const allReservations = reservations ?? [];
+    const allReservations = (reservations ?? []) as any[];
 
     // Calculate total reservations
     const total_reservations = allReservations.length;

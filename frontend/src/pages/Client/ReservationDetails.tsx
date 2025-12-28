@@ -1,244 +1,405 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import Header from "@/components/Client/Header"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Settings, Fuel, Wind, ChevronDown, Calendar, DollarSign, X, CarIcon } from "lucide-react"
+import { Settings, Fuel, Wind, ChevronDown, Calendar, DollarSign, CarIcon, Loader2, User, MapPin, Clock, Phone } from "lucide-react"
 import ClientFooter from "@/components/Client/Footer"
+import { reservationsApi, type Reservation } from "@/services/reservationsApi"
+import { carsApi, type Car } from "@/services/carsApi"
+import { useToast } from "@/hooks/use-toast"
+
+// Format currency helper
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('ar-DZ', {
+    style: 'currency',
+    currency: 'DZD',
+    minimumFractionDigits: 2,
+  }).format(amount).replace('DZD', 'DA')
+}
+
+// Format date helper
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+// Calculate days between dates
+const calculateDays = (startDate: string, endDate: string) => {
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  const diffTime = Math.abs(end.getTime() - start.getTime())
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+}
+
+// Get status badge color
+const getStatusBadge = (status: string) => {
+  switch (status) {
+    case 'pending':
+      return 'bg-yellow-100 text-yellow-800'
+    case 'confirmed':
+      return 'bg-blue-100 text-blue-800'
+    case 'completed':
+      return 'bg-green-100 text-green-800'
+    case 'cancelled':
+      return 'bg-gray-200 text-gray-700'
+    default:
+      return 'bg-gray-200 text-gray-700'
+  }
+}
 
 export default function ReservationDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [status, setStatus] = useState<"pending" | "confirmed" | "ongoing" | "returned">("ongoing")
+  const { toast } = useToast()
+  
+  const [isLoading, setIsLoading] = useState(true)
+  const [reservation, setReservation] = useState<Reservation | null>(null)
+  const [car, setCar] = useState<Car | null>(null)
+  const [isUpdating, setIsUpdating] = useState(false)
 
-  // Mock data
-  const reservation = {
-    id: "#RES-12345",
-    car: "Mercedes Sedan",
-    price: 25,
-    transmission: "Automat",
-    fuel: "PB 95",
-    ac: true,
-    customer: {
-      name: "Devon Lane",
-      email: "john.smith@email.com",
-      phone: "+1 234-567-8900",
-      location: "Philadelphia, USA",
-      revenue: "$101,345.00",
-    },
-    pickup: {
-      date: "12 March 2025",
-      time: "10:00 AM",
-    },
-    return: {
-      date: "15 March 2025",
-      time: "4:00 PM",
-    },
-    duration: "5 Days",
-    payment: {
-      rental: 120.0,
-      paid: 50,
-      onPickup: 70,
-    },
-  }
+  // Fetch reservation data
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!id) return
+      
+      setIsLoading(true)
+      try {
+        const reservationData = await reservationsApi.getById(id)
+        if (reservationData) {
+          setReservation(reservationData)
+          
+          // Fetch car details if we have car_id
+          if (reservationData.car_id) {
+            const carData = await carsApi.getCarById(reservationData.car_id)
+            setCar(carData)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching reservation:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load reservation details.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
 
-  const getStatusOptions = () => {
-    switch (status) {
-      case "pending":
-        return ["Update", "Confirmed", "Ongoing", "Delete"]
-      case "ongoing":
-        return ["Update", "Returned", "Delete"]
-      default:
-        return ["Update", "Delete"]
+    fetchData()
+  }, [id])
+
+  // Handle status update
+  const handleStatusUpdate = async (newStatus: string) => {
+    if (!id || !reservation) return
+
+    setIsUpdating(true)
+    try {
+      const updated = await reservationsApi.updateStatus(id, newStatus)
+      if (updated) {
+        setReservation({ ...reservation, status: newStatus as any })
+        toast({
+          title: "Success",
+          description: `Reservation status updated to ${newStatus}.`,
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update reservation status.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUpdating(false)
     }
   }
+
+  // Handle cancel
+  const handleCancel = async () => {
+    if (!id || !confirm('Are you sure you want to cancel this reservation?')) return
+
+    setIsUpdating(true)
+    try {
+      const success = await reservationsApi.cancel(id)
+      if (success) {
+        toast({
+          title: "Success",
+          description: "Reservation cancelled successfully.",
+        })
+        navigate('/client/reservations')
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to cancel reservation.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  // Get available status transitions
+  const getStatusOptions = (currentStatus: string) => {
+    switch (currentStatus) {
+      case "pending":
+        return ["confirmed", "cancelled"]
+      case "confirmed":
+        return ["completed", "cancelled"]
+      case "completed":
+      case "cancelled":
+        return [] // No transitions from final states
+      default:
+        return []
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-12 h-12 animate-spin text-[#DC2626]" />
+        </main>
+        <ClientFooter />
+      </div>
+    )
+  }
+
+  if (!reservation) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1 flex flex-col items-center justify-center">
+          <Calendar className="w-20 h-20 text-muted-foreground/30 mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Reservation Not Found</h2>
+          <p className="text-muted-foreground mb-6">The reservation you're looking for doesn't exist.</p>
+          <Button onClick={() => navigate('/client/reservations')}>Back to Reservations</Button>
+        </main>
+        <ClientFooter />
+      </div>
+    )
+  }
+
+  const days = calculateDays(reservation.start_date, reservation.end_date)
+  const statusOptions = getStatusOptions(reservation.status)
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
-        <h1 className="text-4xl font-bold text-center mb-8">Reservation details</h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-4xl font-bold">Reservation Details</h1>
+          <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusBadge(reservation.status)}`}>
+            {reservation.status.toUpperCase()}
+          </span>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Car Card */}
           <div className="lg:col-span-1">
-            <Card className="p-6 border rounded-xl relative">
-              <button className="absolute top-4 right-4 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow hover:bg-red-50 transition-colors">
-                <X className="w-5 h-5 text-red-500" />
-              </button>
-
-              <div className="w-full h-40 bg-muted rounded-lg mb-4 flex items-center justify-center">
-                <CarIcon className="w-24 h-24 text-muted-foreground" />
+            <Card className="p-6 border rounded-xl">
+              <div className="w-full h-40 bg-muted rounded-lg mb-4 flex items-center justify-center overflow-hidden">
+                {car?.primary_image_url ? (
+                  <img 
+                    src={car.primary_image_url} 
+                    alt={`${car.make} ${car.model}`} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <CarIcon className="w-24 h-24 text-muted-foreground" />
+                )}
               </div>
 
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="font-bold text-xl">Mercedes</h3>
-                  <p className="text-muted-foreground text-sm">Sedan</p>
+                  <h3 className="font-bold text-xl">
+                    {car ? `${car.make} ${car.model}` : `Car #${reservation.car_id.slice(0, 8)}`}
+                  </h3>
+                  <p className="text-muted-foreground">{car?.category || 'Vehicle'}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[#DC2626] font-bold text-xl">${reservation.price}</p>
-                  <p className="text-muted-foreground text-xs">per day</p>
+                  <p className="text-[#DC2626] font-bold text-xl">
+                    {formatCurrency(car?.price_per_day || 0)}
+                  </p>
+                  <p className="text-muted-foreground text-sm">/ day</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6 flex-wrap">
-                <div className="flex items-center gap-1">
-                  <Settings className="w-4 h-4" />
-                  <span>{reservation.transmission}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Fuel className="w-4 h-4" />
-                  <span>{reservation.fuel}</span>
-                </div>
-                {reservation.ac && (
-                  <div className="flex items-center gap-1">
-                    <Wind className="w-4 h-4" />
-                    <span>Air Conditioner</span>
+              {/* Car Specs */}
+              {car && (
+                <div className="flex justify-around py-4 border-t border-b mb-4">
+                  <div className="text-center">
+                    <Settings className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
+                    <p className="text-xs text-muted-foreground">{car.transmission || 'Auto'}</p>
                   </div>
-                )}
-              </div>
+                  <div className="text-center">
+                    <Fuel className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
+                    <p className="text-xs text-muted-foreground">{car.fuel_type || 'Petrol'}</p>
+                  </div>
+                  <div className="text-center">
+                    <Wind className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
+                    <p className="text-xs text-muted-foreground">{car.seats || 5} seats</p>
+                  </div>
+                </div>
+              )}
 
-              <Button className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground">
-                View Details
+              <Button
+                onClick={() => car && navigate(`/client/vehicles/${car.id}`)}
+                variant="outline"
+                className="w-full"
+                disabled={!car}
+              >
+                View Vehicle
               </Button>
             </Card>
           </div>
 
-          {/* Right Column - Details */}
+          {/* Right Column */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Status */}
-            <div className="flex items-center gap-4">
-              <span className="text-lg font-semibold">Status :</span>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    className={`${
-                      status === "pending"
-                        ? "bg-orange-500 hover:bg-orange-600"
-                        : status === "confirmed"
-                          ? "bg-green-500 hover:bg-green-600"
-                          : status === "ongoing"
-                            ? "bg-[#DC2626] hover:bg-[#B71C1C]"
-                            : "bg-gray-500 hover:bg-gray-600"
-                    } text-white`}
-                  >
-                    {status.charAt(0).toUpperCase() + status.slice(1)}
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  {getStatusOptions().map((option) => (
-                    <DropdownMenuItem
-                      key={option}
-                      onClick={() => {
-                        if (option === "Delete") {
-                          // Handle delete
-                          navigate("/client/reservations")
-                        } else if (option !== "Update") {
-                          setStatus(option.toLowerCase() as any)
-                        }
-                      }}
-                    >
-                      {option}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            {/* Reservation ID */}
-            <div>
-              <p className="text-lg">
-                <span className="font-semibold">Reservation ID:</span> {reservation.id}
-              </p>
-              <p className="text-lg">
-                <span className="font-semibold">Car:</span> {reservation.car}
-              </p>
-            </div>
-
-            {/* Date And Timing & Payment */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="p-6 border rounded-xl">
-                <div className="flex items-center gap-2 mb-4">
-                  <Calendar className="w-5 h-5" />
-                  <h3 className="font-bold text-lg">Date And Timing</h3>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <p>
-                    <span className="font-medium">Pickup Date & Time:</span> {reservation.pickup.date} –{" "}
-                    {reservation.pickup.time}
-                  </p>
-                  <p>
-                    <span className="font-medium">Return Date & Time:</span> {reservation.return.date} –{" "}
-                    {reservation.return.time}
-                  </p>
-                  <p>
-                    <span className="font-medium">Duration :</span> {reservation.duration}
+            {/* Customer Info */}
+            <Card className="p-6 border rounded-xl">
+              <h3 className="font-bold text-xl mb-4 flex items-center gap-2">
+                <User className="w-5 h-5" />
+                Customer Information
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Name</p>
+                  <p className="font-medium">
+                    {reservation.customer?.full_name || `Customer #${reservation.customer_id.slice(0, 8)}`}
                   </p>
                 </div>
-              </Card>
-
-              <Card className="p-6 border rounded-xl">
-                <div className="flex items-center gap-2 mb-4">
-                  <DollarSign className="w-5 h-5" />
-                  <h3 className="font-bold text-lg">Payment</h3>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Customer ID</p>
+                  <p className="font-medium font-mono text-sm">{reservation.customer_id.slice(0, 8)}...</p>
                 </div>
-                <div className="space-y-2 text-sm">
-                  <p>
-                    <span className="font-medium">Rental Price:</span> ${reservation.payment.rental.toFixed(2)}
+                <div className="col-span-2 pt-2 border-t">
+                  <p className="text-sm text-muted-foreground mb-1 flex items-center gap-2">
+                    <Phone className="w-3 h-3" />
+                    Phone Number
                   </p>
-                  <p>
-                    <span className="font-medium">Paid By Card :</span> ${reservation.payment.paid} (30%)
+                  <p className="font-medium">
+                    {reservation.customer?.phone_number || "Not provided"}
                   </p>
-                  <p>
-                    <span className="font-medium">On Pick Up :</span> ${reservation.payment.onPickup}
-                  </p>
-                </div>
-              </Card>
-            </div>
-
-            {/* Customer Information */}
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Customer information</h2>
-
-              <div className="bg-card border rounded-xl overflow-hidden">
-                {/* Table Header */}
-                <div className="grid grid-cols-4 bg-muted/50 p-4 gap-4 font-medium text-sm">
-                  <div className="flex items-center gap-2">
-                    <span>Customer name</span>
-                    <button className="text-muted-foreground">↕</button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span>Contact</span>
-                    <button className="text-muted-foreground">↕</button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span>Location</span>
-                    <button className="text-muted-foreground">↕</button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span>revenue</span>
-                    <button className="text-muted-foreground">↕</button>
-                  </div>
-                </div>
-
-                {/* Table Row */}
-                <div className="grid grid-cols-4 p-4 gap-4">
-                  <div>{reservation.customer.name}</div>
-                  <div className="text-sm">
-                    <p>{reservation.customer.email}</p>
-                    <p>{reservation.customer.phone}</p>
-                  </div>
-                  <div>{reservation.customer.location}</div>
-                  <div className="font-bold">{reservation.customer.revenue}</div>
                 </div>
               </div>
-            </div>
+            </Card>
+
+            {/* Rental Period */}
+            <Card className="p-6 border rounded-xl">
+              <h3 className="font-bold text-xl mb-4 flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                Rental Period
+              </h3>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <p className="text-sm text-green-600 font-medium mb-1">Pick-Up Date</p>
+                  <p className="font-bold">{formatDate(reservation.start_date)}</p>
+                </div>
+                <div className="p-4 bg-red-50 rounded-lg">
+                  <p className="text-sm text-red-600 font-medium mb-1">Return Date</p>
+                  <p className="font-bold">{formatDate(reservation.end_date)}</p>
+                </div>
+              </div>
+              <div className="mt-4 text-center">
+                <p className="text-muted-foreground">Duration</p>
+                <p className="text-2xl font-bold">{days} Days</p>
+              </div>
+            </Card>
+
+            {/* Payment Summary */}
+            <Card className="p-6 border rounded-xl">
+              <h3 className="font-bold text-xl mb-4 flex items-center gap-2">
+                <DollarSign className="w-5 h-5" />
+                Payment Summary
+              </h3>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Daily Rate</span>
+                  <span>{formatCurrency(car?.price_per_day || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Duration</span>
+                  <span>{days} days</span>
+                </div>
+                <div className="flex justify-between border-t pt-3">
+                  <span className="font-bold">Total</span>
+                  <span className="font-bold text-xl text-[#DC2626]">
+                    {formatCurrency(reservation.total_price)}
+                  </span>
+                </div>
+              </div>
+            </Card>
+
+            {/* Notes */}
+            {reservation.notes && (
+              <Card className="p-6 border rounded-xl">
+                <h3 className="font-bold text-xl mb-4">Notes</h3>
+                <p className="text-muted-foreground">{reservation.notes}</p>
+              </Card>
+            )}
+
+            {/* Actions */}
+            <Card className="p-6 border rounded-xl">
+              <h3 className="font-bold text-xl mb-4">Actions</h3>
+              <div className="flex gap-4">
+                {statusOptions.length > 0 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        className="bg-[#DC2626] hover:bg-[#B71C1C] text-white"
+                        disabled={isUpdating}
+                      >
+                        {isUpdating ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : null}
+                        Update Status
+                        <ChevronDown className="w-4 h-4 ml-2" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      {statusOptions.map((status) => (
+                        <DropdownMenuItem 
+                          key={status}
+                          onClick={() => handleStatusUpdate(status)}
+                          className="capitalize"
+                        >
+                          Mark as {status}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                
+                {reservation.status !== 'completed' && reservation.status !== 'cancelled' && (
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCancel}
+                    disabled={isUpdating}
+                    className="text-red-600 border-red-300 hover:bg-red-50"
+                  >
+                    Cancel Reservation
+                  </Button>
+                )}
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/client/reservations')}
+                >
+                  Back to List
+                </Button>
+              </div>
+            </Card>
           </div>
         </div>
       </main>

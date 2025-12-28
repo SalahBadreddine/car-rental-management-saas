@@ -3,6 +3,8 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../common/providers/supabase.provider';
 import { CreateCarDto } from './dto/create-car.dto';
 import { UpdateCarDto } from './dto/update-car.dto';
+import { SearchCarsDto } from './dto/search-cars.dto';
+import { FeaturedCarsDto } from './dto/featured-cars.dto';
 
 @Injectable()
 export class CarsService {
@@ -10,6 +12,132 @@ export class CarsService {
     @Inject(SUPABASE_CLIENT)
     private readonly supabaseClient: SupabaseClient,
   ) {}
+
+  async search(dto: SearchCarsDto) {
+    if (!dto.tenantId) {
+      throw new BadRequestException('tenantId query parameter is required.');
+    }
+
+    let query = this.supabaseClient
+      .from('cars')
+      .select('*')
+      .eq('tenant_id', dto.tenantId);
+
+    if (dto.search) {
+      const searchTerm = dto.search.toLowerCase();
+      query = query.or(
+        `make.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%`
+      );
+    }
+
+    if (dto.brand) query = query.eq('make', dto.brand);
+    if (dto.type) query = query.eq('category', dto.type);
+    if (dto.startingPrice !== null && dto.startingPrice !== undefined) {
+      query = query.gte('price_per_day', dto.startingPrice);
+    }
+    if (dto.endingPrice !== null && dto.endingPrice !== undefined) {
+      query = query.lte('price_per_day', dto.endingPrice);
+    }
+    if (dto.transmission) query = query.eq('transmission', dto.transmission);
+    if (dto.fuelType) query = query.eq('fuel_type', dto.fuelType);
+    if (dto.locationId) query = query.eq('location_id', dto.locationId);
+    if (dto.status) {
+      query = query.eq('status', dto.status);
+    } else {
+      query = query.eq('status', 'available');
+    }
+
+    query = query.order('rental_count', { ascending: false });
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new InternalServerErrorException(`Failed to search cars: ${error.message}`);
+    }
+
+    return data ?? [];
+  }
+
+  async getFeatured(query: FeaturedCarsDto) {
+    const limit = query.limit || 4;
+
+    let supabaseQuery = this.supabaseClient
+      .from('cars')
+      .select('*')
+      .eq('is_featured', true)
+      .order('rental_count', { ascending: false })
+      .limit(limit);
+
+    if (query.tenantId) supabaseQuery = supabaseQuery.eq('tenant_id', query.tenantId);
+
+    const { data, error } = await supabaseQuery;
+
+    if (error) throw new BadRequestException(error.message);
+
+    return data ?? [];
+  }
+
+  async getStatistics(tenantId?: string, locationId?: string) {
+    let query = this.supabaseClient
+      .from('cars')
+      .select('tenant_id, id, make, category, location_id, rental_count, status');
+
+    if (tenantId) {
+      query = query.eq('tenant_id', tenantId);
+    }
+    
+    // Only filter by location if specified (undefined = all locations)
+    if (locationId) {
+      query = query.eq('location_id', locationId);
+    }
+
+    const { data, error } = await query;
+
+    if (error || !data) throw new BadRequestException(error?.message || 'Failed to fetch cars');
+
+    const filteredCars = data;
+
+    const stats: any = {
+      total_cars: filteredCars.length,
+      by_status: {},
+      by_category: {},
+      by_location_id: {},
+      average_rental_count: 0,
+      most_rented: null,
+      least_rented: null,
+    };
+
+    if (filteredCars.length > 0) {
+      let totalRental = 0;
+
+      filteredCars.forEach((car: any) => {
+        totalRental += car.rental_count || 0;
+        stats.by_status[car.status] = (stats.by_status[car.status] || 0) + 1;
+        stats.by_category[car.category] = (stats.by_category[car.category] || 0) + 1;
+        if (car.location_id) {
+          stats.by_location_id[car.location_id] = (stats.by_location_id[car.location_id] || 0) + 1;
+        }
+      });
+
+      stats.average_rental_count = totalRental / filteredCars.length;
+
+      const sortedByRental = [...filteredCars].sort((a: any, b: any) => (b.rental_count || 0) - (a.rental_count || 0));
+
+      stats.most_rented = {
+        id: sortedByRental[0].id,
+        make: sortedByRental[0].make,
+        rental_count: sortedByRental[0].rental_count || 0,
+      };
+
+      stats.least_rented = {
+        id: sortedByRental[sortedByRental.length - 1].id,
+        make: sortedByRental[sortedByRental.length - 1].make,
+        rental_count: sortedByRental[sortedByRental.length - 1].rental_count || 0,
+      };
+    }
+
+    return { data: stats };
+  }
 
   async create(dto: CreateCarDto, tenantId: string) {
     if (!tenantId) {
@@ -59,15 +187,9 @@ export class CarsService {
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false });
 
-    if (filters?.category) {
-      query = query.eq('category', filters.category);
-    }
-    if (filters?.status) {
-      query = query.eq('status', filters.status);
-    }
-    if (filters?.locationId) {
-      query = query.eq('location_id', filters.locationId);
-    }
+    if (filters?.category) query = query.eq('category', filters.category);
+    if (filters?.status) query = query.eq('status', filters.status);
+    if (filters?.locationId) query = query.eq('location_id', filters.locationId);
 
     const { data, error } = await query;
 
@@ -84,9 +206,7 @@ export class CarsService {
       .select('*')
       .eq('id', id);
 
-    if (tenantId) {
-      query = query.eq('tenant_id', tenantId);
-    }
+    if (tenantId) query = query.eq('tenant_id', tenantId);
 
     const { data, error } = await query.single();
 
@@ -157,7 +277,6 @@ export class CarsService {
   }
 
   async checkAvailability(carId: string, startDate: string, endDate: string) {
-    // Check if there are any overlapping reservations
     const { data: overlapping, error } = await this.supabaseClient
       .from('reservations')
       .select('id, start_date, end_date, status')
@@ -205,3 +324,4 @@ export class CarsService {
     return data;
   }
 }
+

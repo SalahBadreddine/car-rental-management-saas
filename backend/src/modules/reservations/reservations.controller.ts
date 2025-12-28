@@ -8,6 +8,7 @@ import {
   Post,
   UseGuards,
   BadRequestException,
+  Query,
 } from '@nestjs/common';
 import { ReservationsService } from './reservations.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
@@ -25,11 +26,9 @@ export class ReservationsController {
   @Post()
   @UseGuards(JwtAuthGuard)
   async create(@Body() body: CreateReservationDto, @CurrentUser() user: any) {
-    if (!user?.tenant_id) {
-      throw new BadRequestException('Tenant context is required to create a reservation.');
-    }
-
-    return this.reservationsService.create(body, user.tenant_id, user.id);
+    // For customers without tenant_id, we'll get it from the car they're booking
+    // For admins with tenant_id, we'll validate it matches the car's tenant
+    return this.reservationsService.create(body, user.tenant_id || null, user.id);
   }
 
   /**
@@ -38,14 +37,25 @@ export class ReservationsController {
    */
   @Get()
   @UseGuards(JwtAuthGuard)
-  async findAll(@CurrentUser() user: any) {
+  async findAll(
+    @CurrentUser() user: any,
+    @Query('status') status?: string,
+    @Query('customer_id') customerId?: string,
+    @Query('car_id') carId?: string,
+    @Query('pickup_location_id') pickupLocationId?: string,
+  ) {
     if (!user?.tenant_id) {
       throw new BadRequestException('Tenant context is required.');
     }
 
     // Admin should see all reservations for their tenant
     if (user.role === 'client_admin') {
-      return this.reservationsService.findAllByTenant(user.tenant_id);
+      return this.reservationsService.findAllByTenant(user.tenant_id, {
+        status,
+        customerId,
+        carId,
+        pickupLocationId,
+      });
     }
 
     // Customers only see their own reservations
@@ -59,7 +69,7 @@ export class ReservationsController {
    */
   @Get('statistics')
   @UseGuards(JwtAuthGuard)
-  async getStatistics(@CurrentUser() user: any) {
+  async getStatistics(@CurrentUser() user: any, @Query('locationId') locationId?: string) {
     if (!user?.tenant_id) {
       throw new BadRequestException('Tenant context is required.');
     }
@@ -68,7 +78,7 @@ export class ReservationsController {
       throw new BadRequestException('Only admins can access reservation statistics.');
     }
 
-    return this.reservationsService.getStatistics(user.tenant_id);
+    return this.reservationsService.getStatistics(user.tenant_id, locationId);
   }
 
   /**

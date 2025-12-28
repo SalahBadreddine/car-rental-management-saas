@@ -1,10 +1,7 @@
-const API_BASE_URL = 'http://localhost:3000';
-// this should be changed later , it's just hardcoded for a fixed tenant id for now for testing purposes
-const TENANT_ID = '11111111-1111-1111-1111-111111111111';
-// const TENANT_ID = '22222222-2222-2222-2222-222222222222';
-// const TENANT_ID = 'e474e94a-4730-4735-a468-714390c1de80';
-// const TENANT_ID = '855a30d8-f0f9-4d37-89db-3ae9a105891f';
+import { apiRequest } from '@/lib/api';
+import { getUser } from '@/lib/auth';
 
+const API_BASE_URL = 'http://localhost:3000';
 
 export interface Car {
   id: string;
@@ -25,7 +22,7 @@ export interface Car {
   status: string;
   primary_image_url: string;
   rental_count: number;
-  gallery_urls: string | null;
+  gallery_urls: string[] | null;
   created_at: string;
 }
 
@@ -41,27 +38,65 @@ export interface SearchFilters {
   status?: string;
 }
 
+export interface CreateCarDto {
+  make: string;
+  model: string;
+  year: number;
+  licensePlate: string;
+  color?: string;
+  category: string;
+  pricePerDay: number;
+  depositAmount?: number;
+  transmission?: string;
+  fuelType?: string;
+  seats?: number;
+  features?: string[];
+  locationId?: string;
+}
+
+const getTenantId = (): string => {
+  const user = getUser();
+  return user?.tenant_id || '';
+};
+
 export const carsApi = {
-  // Get all cars for the tenant
-  async getAllCars(): Promise<Car[]> {
+  /**
+   * Get all cars for the tenant (optionally filtered by location)
+   */
+  async getAllCars(locationId?: string): Promise<Car[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/cars?tenantId=${TENANT_ID}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch cars');
+      const tenantId = getTenantId();
+      if (!tenantId) {
+        console.error('No tenant ID found');
+        return [];
       }
       
-      return await response.json();
+      let url = `/cars?tenantId=${tenantId}`;
+      if (locationId) {
+        url += `&locationId=${locationId}`;
+      }
+      
+      const response = await apiRequest(url, 'GET');
+      
+      if (response.status !== 200) {
+        console.error('Failed to fetch cars:', response.data);
+        return [];
+      }
+      
+      return response.data || [];
     } catch (error) {
       console.error('Error fetching cars:', error);
-      throw error;
+      return [];
     }
   },
 
-  // Search and filter cars
+  /**
+   * Search and filter cars
+   */
   async searchCars(filters: SearchFilters): Promise<Car[]> {
     try {
-      const params = new URLSearchParams({ tenantId: TENANT_ID });
+      const tenantId = getTenantId();
+      const params = new URLSearchParams({ tenantId });
       
       if (filters.search) params.append('search', filters.search);
       if (filters.brand) params.append('brand', filters.brand);
@@ -73,20 +108,256 @@ export const carsApi = {
       if (filters.locationId) params.append('locationId', filters.locationId);
       if (filters.status) params.append('status', filters.status);
       
-      const response = await fetch(`${API_BASE_URL}/cars/search?${params.toString()}`);
+      const response = await apiRequest(`/cars/search?${params.toString()}`, 'GET');
+      
+      if (response.status !== 200) {
+        console.error('Failed to search cars:', response.data);
+        return [];
+      }
+      
+      return response.data || [];
+    } catch (error) {
+      console.error('Error searching cars:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Get a single car by ID
+   */
+  async getCarById(id: string): Promise<Car | null> {
+    try {
+      const response = await apiRequest(`/cars/${id}`, 'GET');
+      
+      if (response.status !== 200) {
+        console.error('Failed to fetch car:', response.data);
+        return null;
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching car:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Create a new car (admin only)
+   */
+  async createCar(data: CreateCarDto, primaryImage?: File, galleryImages?: File[]): Promise<Car | null> {
+    try {
+      const formData = new FormData();
+      
+      // Add text fields
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (key === 'features' && Array.isArray(value)) {
+            // Send each feature as separate form field for proper array parsing
+            value.forEach((item) => {
+              formData.append('features', item);
+            });
+          } else if (Array.isArray(value)) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, String(value));
+          }
+        }
+      });
+      
+      // Add files
+      if (primaryImage) {
+        formData.append('primaryImage', primaryImage);
+      }
+      if (galleryImages && galleryImages.length > 0) {
+        galleryImages.forEach((file) => {
+          formData.append('galleryImages', file);
+        });
+      }
+      
+      // Use fetch directly for FormData (apiRequest sends JSON)
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_BASE_URL}/cars`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
       
       if (!response.ok) {
-        throw new Error('Failed to search cars');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to create car:', errorData);
+        // Log validation errors clearly
+        if (Array.isArray(errorData.message)) {
+          console.error('Validation errors:', errorData.message.join(', '));
+        }
+        throw new Error(Array.isArray(errorData.message) ? errorData.message.join(', ') : errorData.message || 'Failed to create car');
       }
       
       return await response.json();
     } catch (error) {
-      console.error('Error searching cars:', error);
+      console.error('Error creating car:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Update a car (admin only)
+   */
+  async updateCar(id: string, data: Partial<CreateCarDto>, primaryImage?: File, galleryImages?: File[]): Promise<Car | null> {
+    try {
+      const formData = new FormData();
+      
+      // Add text fields (excluding arrays)
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && !Array.isArray(value)) {
+          formData.append(key, String(value));
+        }
+      });
+      
+      // Add arrays as separate entries with same key
+      if (data.features && Array.isArray(data.features)) {
+        data.features.forEach(feature => {
+          formData.append('features', feature);
+        });
+      }
+      
+      // Add files
+      if (primaryImage) {
+        formData.append('primaryImage', primaryImage);
+      }
+      if (galleryImages && galleryImages.length > 0) {
+        galleryImages.forEach((file) => {
+          formData.append('galleryImages', file);
+        });
+      }
+      
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_BASE_URL}/cars/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to update car:', errorData);
+        return null;
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating car:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Delete a car (admin only)
+   */
+  async deleteCar(id: string): Promise<boolean> {
+    try {
+      const response = await apiRequest(`/cars/${id}`, 'DELETE');
+      
+      if (response.status !== 200) {
+        console.error('Failed to delete car:', response.data);
+        // Throw error with message so frontend can handle specific cases
+        throw new Error(response.data?.message || 'Failed to delete car');
+      }
+      
+      return true;
+    } catch (error: any) {
+      console.error('Error deleting car:', error);
       throw error;
     }
   },
 
-  // Get unique brands of cars
+  /**
+   * Update car status (admin only)
+   */
+  async updateCarStatus(id: string, status: string): Promise<Car | null> {
+    try {
+      const response = await apiRequest(`/cars/${id}/status`, 'PATCH', { status });
+      
+      if (response.status !== 200) {
+        console.error('Failed to update car status:', response.data);
+        return null;
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error updating car status:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Check car availability
+   */
+  async checkAvailability(id: string, startDate: string, endDate: string): Promise<any> {
+    try {
+      const response = await apiRequest(
+        `/cars/${id}/availability?startDate=${startDate}&endDate=${endDate}`,
+        'GET'
+      );
+      
+      if (response.status !== 200) {
+        console.error('Failed to check availability:', response.data);
+        return null;
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error checking availability:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Get car statistics (admin only)
+   */
+  async getStatistics(locationId?: string): Promise<any> {
+    try {
+      const endpoint = locationId ? `/cars/statistics?locationId=${locationId}` : '/cars/statistics';
+      const response = await apiRequest(endpoint, 'GET');
+      
+      if (response.status !== 200) {
+        console.error('Failed to fetch car statistics:', response.data);
+        return null;
+      }
+      
+      return response.data?.data || response.data;
+    } catch (error) {
+      console.error('Error fetching car statistics:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Get featured cars
+   */
+  async getFeaturedCars(limit: number = 4): Promise<Car[]> {
+    try {
+      const tenantId = getTenantId();
+      const response = await apiRequest(`/cars/featured?limit=${limit}&tenantId=${tenantId}`, 'GET');
+      
+      if (response.status !== 200) {
+        console.error('Failed to fetch featured cars:', response.data);
+        return [];
+      }
+      
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching featured cars:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Get unique brands of cars
+   */
   async getBrands(): Promise<string[]> {
     try {
       const cars = await this.getAllCars();
@@ -96,11 +367,13 @@ export const carsApi = {
       return brands.sort();
     } catch (error) {
       console.error('Error fetching brands:', error);
-      throw error;
+      return [];
     }
   },
 
-  // Get unique categories of cars
+  /**
+   * Get unique categories of cars
+   */
   async getCategories(): Promise<string[]> {
     try {
       const cars = await this.getAllCars();
@@ -110,7 +383,7 @@ export const carsApi = {
       return categories.sort();
     } catch (error) {
       console.error('Error fetching categories:', error);
-      throw error;
+      return [];
     }
   },
 };
