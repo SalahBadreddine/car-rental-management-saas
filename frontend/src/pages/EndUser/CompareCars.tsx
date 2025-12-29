@@ -1,30 +1,60 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { X, Plus, ArrowLeft, Check, X as XIcon, Star, MapPin, Calendar, Users, Settings, Fuel, Wind, Palette, Gauge, Car as CarIcon } from "lucide-react";
-import { cars } from "@/data/cars";
-import { Car } from "@/types/car";
+import { X, Plus, ArrowLeft, Check, X as XIcon, Settings, Fuel, Wind, Car as CarIcon, Loader2 } from "lucide-react";
+import { enduserCarsApi, type EndUserCar } from "@/services/enduserCarsApi";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useToast } from "@/hooks/use-toast";
 
 const CompareCars = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [selectedCarIds, setSelectedCarIds] = useState<number[]>(() => {
+  const { toast } = useToast();
+  const [selectedCarIds, setSelectedCarIds] = useState<string[]>(() => {
     // Get car IDs from location state or localStorage
-    const state = location.state as { carIds?: number[] } | null;
+    const state = location.state as { carIds?: string[] } | null;
     if (state?.carIds) return state.carIds;
     const stored = localStorage.getItem("compareCars");
     return stored ? JSON.parse(stored) : [];
   });
-
-  const selectedCars = useMemo(() => {
-    return selectedCarIds.map((id) => cars.find((car) => car.id === id)).filter(Boolean) as Car[];
-  }, [selectedCarIds]);
+  const [selectedCars, setSelectedCars] = useState<EndUserCar[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const maxCars = 4;
 
-  const handleRemoveCar = (carId: number) => {
+  // Fetch cars when IDs change
+  useEffect(() => {
+    const fetchCars = async () => {
+      if (selectedCarIds.length === 0) {
+        setSelectedCars([]);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const cars = await Promise.all(
+          selectedCarIds.map(id => enduserCarsApi.getCarById(id))
+        );
+        setSelectedCars(cars.filter((car): car is EndUserCar => car !== null));
+      } catch (error) {
+        console.error('Error fetching cars for comparison:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load cars for comparison.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCars();
+  }, [selectedCarIds, toast]);
+
+  const handleRemoveCar = (carId: string) => {
     const newIds = selectedCarIds.filter((id) => id !== carId);
     setSelectedCarIds(newIds);
     localStorage.setItem("compareCars", JSON.stringify(newIds));
@@ -39,19 +69,18 @@ const CompareCars = () => {
     localStorage.removeItem("compareCars");
   };
 
-  const getBestValue = (attribute: keyof Car, type: "min" | "max" = "min") => {
+  const getBestValue = (attribute: "price" | "year", type: "min" | "max" = "min") => {
     if (selectedCars.length === 0) return null;
     const values = selectedCars.map((car) => {
-      if (attribute === "price") return car.price;
+      if (attribute === "price") return car.price_per_day;
       if (attribute === "year") return car.year || 0;
-      if (attribute === "mileage") return car.mileage || 0;
       return 0;
     });
     return type === "min" ? Math.min(...values) : Math.max(...values);
   };
 
   // Empty state - no cars selected
-  if (selectedCars.length === 0) {
+  if (selectedCarIds.length === 0) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
@@ -79,6 +108,18 @@ const CompareCars = () => {
               </Button>
             </div>
           </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1 container mx-auto px-4 py-12 flex items-center justify-center">
+          <LoadingSpinner />
         </main>
         <Footer />
       </div>
@@ -160,12 +201,22 @@ const CompareCars = () => {
               >
                 <X className="w-4 h-4" />
               </button>
-              <div className="bg-gradient-to-br from-card-dark to-card-dark/80 rounded-lg p-4 h-32 flex items-center justify-center mb-3">
-                <CarIcon className="w-16 h-16 text-muted-foreground/30" />
+              <div className="bg-gradient-to-br from-card-dark to-card-dark/80 rounded-lg p-4 h-32 flex items-center justify-center mb-3 relative overflow-hidden">
+                {car.primary_image_url ? (
+                  <img
+                    src={car.primary_image_url}
+                    alt={`${car.make} ${car.model}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                ) : null}
+                <CarIcon className={`w-16 h-16 text-muted-foreground/30 ${car.primary_image_url ? "hidden" : ""}`} />
               </div>
-              <h3 className="font-heading font-bold text-lg mb-1">{car.brand} {car.type}</h3>
+              <h3 className="font-heading font-bold text-lg mb-1">{car.make} {car.model}</h3>
               {car.year && <p className="text-sm text-muted-foreground mb-2">{car.year}</p>}
-              <p className="text-primary font-bold text-xl mb-4">${car.price}/day</p>
+              <p className="text-primary font-bold text-xl mb-4">${car.price_per_day}/day</p>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -177,6 +228,7 @@ const CompareCars = () => {
                 <Button
                   onClick={() => navigate(`/rent/${car.id}`)}
                   className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground text-xs py-2"
+                  disabled={car.status !== 'available'}
                 >
                   Book now
                 </Button>
@@ -203,12 +255,12 @@ const CompareCars = () => {
               <div className="space-y-4">
                 <ComparisonRow
                   label="Brand"
-                  values={selectedCars.map((car) => car.brand)}
+                  values={selectedCars.map((car) => car.make)}
                   numCars={selectedCars.length}
                 />
                 <ComparisonRow
-                  label="Model/Type"
-                  values={selectedCars.map((car) => car.type)}
+                  label="Model"
+                  values={selectedCars.map((car) => car.model)}
                   numCars={selectedCars.length}
                 />
                 <ComparisonRow
@@ -218,13 +270,18 @@ const CompareCars = () => {
                   numCars={selectedCars.length}
                 />
                 <ComparisonRow
+                  label="Category"
+                  values={selectedCars.map((car) => car.category)}
+                  numCars={selectedCars.length}
+                />
+                <ComparisonRow
                   label="Transmission"
                   values={selectedCars.map((car) => car.transmission)}
                   numCars={selectedCars.length}
                 />
                 <ComparisonRow
                   label="Fuel Type"
-                  values={selectedCars.map((car) => car.fuel)}
+                  values={selectedCars.map((car) => car.fuel_type)}
                   numCars={selectedCars.length}
                 />
               </div>
@@ -236,29 +293,14 @@ const CompareCars = () => {
               <div className="space-y-4">
                 <ComparisonRow
                   label="Price per day"
-                  values={selectedCars.map((car) => `$${car.price}`)}
+                  values={selectedCars.map((car) => `$${car.price_per_day}`)}
                   highlightValue={bestPrice ? `$${bestPrice}` : undefined}
                   highlightLabel="Best price"
                   numCars={selectedCars.length}
                 />
                 <ComparisonRow
-                  label="Included mileage"
-                  values={selectedCars.map(() => "200 km/day")}
-                  numCars={selectedCars.length}
-                />
-                <ComparisonRow
-                  label="Extra km fee"
-                  values={selectedCars.map(() => "$0.50/km")}
-                  numCars={selectedCars.length}
-                />
-                <ComparisonRow
                   label="Deposit required"
-                  values={selectedCars.map(() => "Yes - $200")}
-                  numCars={selectedCars.length}
-                />
-                <ComparisonRow
-                  label="Payment options"
-                  values={selectedCars.map(() => "Card, Cash at pickup")}
+                  values={selectedCars.map((car) => car.deposit_amount ? `$${car.deposit_amount}` : "N/A")}
                   numCars={selectedCars.length}
                 />
               </div>
@@ -274,96 +316,18 @@ const CompareCars = () => {
                   numCars={selectedCars.length}
                 />
                 <ComparisonRow
-                  label="Doors"
-                  values={selectedCars.map(() => "4")}
-                  numCars={selectedCars.length}
-                />
-                <ComparisonRow
-                  label="Luggage"
-                  values={selectedCars.map(() => "2 large + 1 small")}
-                  numCars={selectedCars.length}
-                />
-                <ComparisonRow
                   label="Air Conditioning"
-                  values={selectedCars.map((car) => car.ac ? "Yes" : "No")}
-                  iconValues={selectedCars.map((car) => car.ac)}
+                  values={selectedCars.map((car) => car.features?.includes("AC") ? "Yes" : "No")}
+                  iconValues={selectedCars.map((car) => car.features?.includes("AC") || false)}
                   numCars={selectedCars.length}
                 />
                 <ComparisonRow
-                  label="Bluetooth"
-                  values={selectedCars.map(() => "Yes")}
-                  iconValues={selectedCars.map(() => true)}
-                  numCars={selectedCars.length}
-                />
-                <ComparisonRow
-                  label="USB Ports"
-                  values={selectedCars.map(() => "Yes")}
-                  iconValues={selectedCars.map(() => true)}
-                  numCars={selectedCars.length}
-                />
-                <ComparisonRow
-                  label="GPS Navigation"
-                  values={selectedCars.map(() => "Yes")}
-                  iconValues={selectedCars.map(() => true)}
+                  label="Features"
+                  values={selectedCars.map((car) => car.features?.join(", ") || "N/A")}
                   numCars={selectedCars.length}
                 />
               </div>
             </div>
-
-            {/* Policies Section */}
-            <div className="bg-card rounded-lg p-6 mb-6">
-              <h2 className="font-heading text-2xl font-bold mb-6">Policies</h2>
-              <div className="space-y-4">
-                <ComparisonRow
-                  label="Fuel policy"
-                  values={selectedCars.map(() => "Full-to-Full")}
-                  numCars={selectedCars.length}
-                />
-                <ComparisonRow
-                  label="Cancellation"
-                  values={selectedCars.map(() => "Free until 24h before")}
-                  numCars={selectedCars.length}
-                />
-                <ComparisonRow
-                  label="Minimum driver age"
-                  values={selectedCars.map(() => "21 years")}
-                  numCars={selectedCars.length}
-                />
-                <ComparisonRow
-                  label="Additional driver"
-                  values={selectedCars.map(() => "Yes - $10/day")}
-                  numCars={selectedCars.length}
-                />
-                <ComparisonRow
-                  label="Insurance coverage"
-                  values={selectedCars.map(() => "Full coverage, $500 excess")}
-                  numCars={selectedCars.length}
-                />
-              </div>
-            </div>
-
-            {/* Pickup / Drop-off Section */}
-            <div className="bg-card rounded-lg p-6 mb-6">
-              <h2 className="font-heading text-2xl font-bold mb-6">Pickup / Drop-off</h2>
-              <div className="space-y-4">
-                <ComparisonRow
-                  label="Location"
-                  values={selectedCars.map(() => "Main Office - Downtown")}
-                  numCars={selectedCars.length}
-                />
-                <ComparisonRow
-                  label="Pickup hours"
-                  values={selectedCars.map(() => "8:00 AM - 8:00 PM")}
-                  numCars={selectedCars.length}
-                />
-                <ComparisonRow
-                  label="Drop-off flexibility"
-                  values={selectedCars.map(() => "Same or different location")}
-                  numCars={selectedCars.length}
-                />
-              </div>
-            </div>
-
           </div>
         </div>
       </main>
@@ -430,4 +394,3 @@ const ComparisonRow = ({ label, values, highlightValue, highlightLabel, iconValu
 };
 
 export default CompareCars;
-
