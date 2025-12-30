@@ -206,6 +206,15 @@ export class CarsController {
   }
 
   /**
+   * Get unavailable dates for a car (Public)
+   * GET /cars/:id/unavailable-dates
+   */
+  @Get(':id/unavailable-dates')
+  async getUnavailableDates(@Param('id') id: string) {
+    return this.carsService.getUnavailableDates(id);
+  }
+
+  /**
    * Quick status update (Admin only)
    * PATCH /cars/:id/status
    */

@@ -5,29 +5,34 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Car as CarIcon, Heart, Settings, Fuel, Wind } from "lucide-react";
-import { cars } from "@/data/cars";
+import { type EndUserCar } from "@/services/enduserCarsApi";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ConfirmationCode = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const bookingData = location.state as {
-    carId: number;
-    pickupDate: Date;
-    returnDate: Date;
+    reservationId: string;
+    reservation?: any;
+    car?: EndUserCar;
+    pickupDate: string;
+    returnDate: string;
     pickupTime: string;
     returnTime: string;
     totalPrice: number;
-    cardNumber: string;
+    advancePayment?: number;
+    remainingPayment?: number;
+    cardNumber?: string;
   } | null;
 
   const [code, setCode] = useState("");
-  const [phoneNumber] = useState("+1 234 567 8900"); // Mock phone number
+  // Get phone number from user profile if available
+  const phoneNumber = user?.phone_number || "+1 234 567 8900";
 
-  const car = bookingData ? cars.find((c) => c.id === bookingData.carId) : null;
-
-  if (!bookingData || !car) {
+  if (!bookingData || !bookingData.car) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-background">
         <Header />
         <main className="flex-1 container mx-auto px-4 py-12 flex items-center justify-center">
           <div className="text-center">
@@ -42,6 +47,8 @@ const ConfirmationCode = () => {
     );
   }
 
+  const car = bookingData.car;
+
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, "");
     if (value.length <= 4) {
@@ -50,12 +57,13 @@ const ConfirmationCode = () => {
   };
 
   const handleResendCode = () => {
-    // In a real app, this would resend the code
-    alert("Confirmation code resent!");
+    // In a real app, this would resend the code via SMS/email
+    alert("Confirmation code resent! Please check your phone.");
   };
 
   const handleContinue = () => {
     if (code.length === 4) {
+      // Navigate to confirmation page with all booking data
       navigate("/rent/confirmation", {
         state: bookingData,
       });
@@ -83,18 +91,30 @@ const ConfirmationCode = () => {
                 <Heart className="w-5 h-5 text-muted-foreground" />
               </button>
               
-              <div className="bg-gradient-to-br from-card-dark to-card-dark/80 p-8 h-48 flex items-center justify-center">
-                <CarIcon className="w-32 h-32 text-muted-foreground/30" />
+              <div className="bg-gradient-to-br from-card-dark to-card-dark/80 p-8 h-48 flex items-center justify-center relative overflow-hidden">
+                {car.primary_image_url ? (
+                  <img
+                    src={car.primary_image_url}
+                    alt={`${car.make} ${car.model}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.classList.remove("hidden");
+                    }}
+                  />
+                ) : null}
+                <CarIcon className={`w-32 h-32 text-muted-foreground/30 ${car.primary_image_url ? "hidden" : ""}`} />
               </div>
               
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="font-heading text-xl font-bold">{car.brand}</h3>
-                    <p className="text-muted-foreground text-sm">{car.type}</p>
+                    <h3 className="font-heading text-xl font-bold">{car.make}</h3>
+                    <p className="text-muted-foreground text-sm">{car.model} {car.year ? `(${car.year})` : ""}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-primary font-bold text-xl">${car.price}</p>
+                    <p className="text-primary font-bold text-xl">${car.price_per_day}</p>
                     <p className="text-muted-foreground text-xs">per day</p>
                   </div>
                 </div>
@@ -106,9 +126,9 @@ const ConfirmationCode = () => {
                   </div>
                   <div className="flex items-center gap-1">
                     <Fuel className="w-4 h-4" />
-                    <span>{car.fuel}</span>
+                    <span>{car.fuel_type}</span>
                   </div>
-                  {car.ac && (
+                  {car.features?.includes("AC") && (
                     <div className="flex items-center gap-1">
                       <Wind className="w-4 h-4" />
                       <span>Air Conditioner</span>
@@ -178,4 +198,3 @@ const ConfirmationCode = () => {
 };
 
 export default ConfirmationCode;
-

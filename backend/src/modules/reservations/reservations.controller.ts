@@ -44,12 +44,11 @@ export class ReservationsController {
     @Query('car_id') carId?: string,
     @Query('pickup_location_id') pickupLocationId?: string,
   ) {
-    if (!user?.tenant_id) {
-      throw new BadRequestException('Tenant context is required.');
-    }
-
-    // Admin should see all reservations for their tenant
+    // Admin should see all reservations for their tenant (requires tenant_id)
     if (user.role === 'client_admin') {
+      if (!user?.tenant_id) {
+        throw new BadRequestException('Tenant context is required for admin users.');
+      }
       return this.reservationsService.findAllByTenant(user.tenant_id, {
         status,
         customerId,
@@ -58,7 +57,7 @@ export class ReservationsController {
       });
     }
 
-    // Customers only see their own reservations
+    // Customers only see their own reservations (no tenant_id required)
     return this.reservationsService.findByCustomer(user.id);
   }
 
@@ -126,15 +125,22 @@ export class ReservationsController {
   /**
    * Get single reservation details
    * GET /reservations/:id
+   * For admins: requires tenant_id and checks tenant ownership
+   * For customers: allows viewing own reservations without tenant_id
    */
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   async findOne(@Param('id') id: string, @CurrentUser() user: any) {
-    if (!user?.tenant_id) {
-      throw new BadRequestException('Tenant context is required.');
+    // For admins, require tenant_id and check tenant ownership
+    if (user.role === 'client_admin') {
+      if (!user?.tenant_id) {
+        throw new BadRequestException('Tenant context is required for admin users.');
+      }
+      return this.reservationsService.findOne(id, user.tenant_id);
     }
 
-    return this.reservationsService.findOne(id, user.tenant_id);
+    // For customers, allow viewing own reservations (no tenant_id required)
+    return this.reservationsService.findOneByCustomer(id, user.id);
   }
 
   /**

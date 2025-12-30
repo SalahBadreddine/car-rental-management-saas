@@ -7,15 +7,42 @@ import Footer from "@/components/Footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Settings, Fuel, Wind, Search, CarIcon, MapPin, Check } from "lucide-react"
-import { cars, brands, carTypes, locations } from "@/data/cars"
-import type { CarFilters } from "@/types/car"
-import { useAuth } from "@/contexts/AuthContext"
+import { Settings, Fuel, Wind, Search, CarIcon, MapPin, Check, Flame, Loader2, Building2 } from "lucide-react"
+import { enduserCarsApi, type EndUserCar } from "@/services/enduserCarsApi"
+import { LoadingSpinner } from "@/components/LoadingSpinner"
+import { useToast } from "@/hooks/use-toast"
+import { apiRequest } from "@/lib/api"
+
+const carTypes: Array<{ value: string; label: string; icon: string }> = [
+  { value: "Cabriolet", label: "Cabriolet", icon: "🚗" },
+  { value: "Pickup", label: "Pickup", icon: "🚚" },
+  { value: "Sedan", label: "Sedan", icon: "🚙" },
+  { value: "SUV", label: "SUV", icon: "🚙" },
+  { value: "Minivan", label: "Minivan", icon: "🚐" },
+]
+
+interface CarFilters {
+  search: string;
+  brand: string | null;
+  type: string | null;
+  startingPrice: number | null;
+  endingPrice: number | null;
+  locationId: string | null;
+}
+
+interface CarWithDetails extends EndUserCar {
+  tenantName?: string;
+  locationName?: string;
+  locationCity?: string;
+}
 
 const Vehicles = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user } = useAuth()
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(true)
+  const [cars, setCars] = useState<CarWithDetails[]>([])
+  const [brands, setBrands] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [activeFilter, setActiveFilter] = useState<string | null>(null)
   const [filters, setFilters] = useState<CarFilters>({
@@ -24,9 +51,9 @@ const Vehicles = () => {
     type: null,
     startingPrice: null,
     endingPrice: null,
-    location: null,
+    locationId: null,
   })
-  const [selectedCars, setSelectedCars] = useState<number[]>(() => {
+  const [selectedCars, setSelectedCars] = useState<string[]>(() => {
     const stored = localStorage.getItem("compareCars")
     return stored ? JSON.parse(stored) : []
   })
@@ -35,6 +62,133 @@ const Vehicles = () => {
     ending: "",
   })
 
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
+
+  // Fetch tenant and location data for cars
+  const enrichCarsWithDetails = async (carsData: EndUserCar[]): Promise<CarWithDetails[]> => {
+    try {
+      // Get all tenants
+      const tenants = await enduserCarsApi.getAllTenants()
+      const tenantMap = new Map(tenants.map(t => [t.id, t]))
+
+      // Get unique tenant IDs and location IDs
+      const tenantIds = [...new Set(carsData.map(c => c.tenant_id))]
+      const locationIds = [...new Set(carsData.map(c => c.location_id).filter(Boolean))]
+
+      // Fetch locations for all tenants
+      const locationPromises = tenantIds.map(async (tenantId) => {
+        try {
+          const response = await apiRequest(`/locations?tenantId=${tenantId}`, 'GET')
+          if (response.status === 200) {
+            return response.data || []
+          }
+          return []
+        } catch {
+          return []
+        }
+      })
+
+      const locationArrays = await Promise.all(locationPromises)
+      const locationMap = new Map()
+      locationArrays.flat().forEach((loc: any) => {
+        locationMap.set(loc.id, loc)
+      })
+
+      // Enrich cars with tenant and location info
+      return carsData.map(car => {
+        const tenant = tenantMap.get(car.tenant_id)
+        const location = car.location_id ? locationMap.get(car.location_id) : null
+
+        return {
+          ...car,
+          tenantName: tenant?.name,
+          locationName: location?.name,
+          locationCity: location?.city,
+        }
+      })
+    } catch (error) {
+      console.error('Error enriching cars with details:', error)
+      return carsData.map(car => ({ ...car }))
+    }
+  }
+
+  // Fetch cars and brands on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true)
+      try {
+        const [carsData, brandsData] = await Promise.all([
+          enduserCarsApi.getAllCars(),
+          enduserCarsApi.getBrands(),
+        ])
+        
+        // Enrich cars with tenant and location details
+        const enrichedCars = await enrichCarsWithDetails(carsData)
+        
+        setCars(enrichedCars)
+        setBrands(brandsData)
+        setIsInitialLoad(false)
+      } catch (error) {
+        console.error('Error fetching cars:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load vehicles. Please try again.",
+          variant: "destructive",
+        })
+        setIsInitialLoad(false)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [toast])
+
+  // Search cars when filters change (but not on initial load)
+  useEffect(() => {
+    // Skip if still on initial load
+    if (isInitialLoad) return
+    
+    const searchCars = async () => {
+      setIsLoading(true)
+      try {
+        const searchFilters: any = {
+          status: 'available', // Only show available cars
+        }
+        
+        if (filters.search) searchFilters.search = filters.search
+        if (filters.brand) searchFilters.brand = filters.brand
+        if (filters.type) searchFilters.type = filters.type
+        if (filters.startingPrice !== null) searchFilters.startingPrice = filters.startingPrice
+        if (filters.endingPrice !== null) searchFilters.endingPrice = filters.endingPrice
+        if (filters.locationId) searchFilters.locationId = filters.locationId
+
+        const results = await enduserCarsApi.searchCars(searchFilters)
+        
+        // Enrich cars with tenant and location details
+        const enrichedCars = await enrichCarsWithDetails(results)
+        
+        setCars(enrichedCars)
+      } catch (error) {
+        console.error('Error searching cars:', error)
+        toast({
+          title: "Error",
+          description: "Failed to search vehicles. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    // Debounce search
+    const timeoutId = setTimeout(() => {
+      searchCars()
+    }, 300)
+
+    return () => clearTimeout(timeoutId)
+  }, [filters, isInitialLoad, toast])
+
   const handleFilterChange = (key: keyof CarFilters, value: any, keepOpen = false) => {
     setFilters((prev) => ({ ...prev, [key]: value }))
     if (!keepOpen) {
@@ -42,53 +196,12 @@ const Vehicles = () => {
     }
   }
 
-  const filteredCars = useMemo(() => {
-    return cars.filter((car) => {
-      // Search filter
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase()
-        if (
-          !car.brand.toLowerCase().includes(searchLower) &&
-          !car.type.toLowerCase().includes(searchLower) &&
-          !`${car.brand} ${car.type}`.toLowerCase().includes(searchLower)
-        ) {
-          return false
-        }
-      }
-
-      // Brand filter
-      if (filters.brand && car.brand !== filters.brand) {
-        return false
-      }
-
-      // Type filter
-      if (filters.type && car.type !== filters.type) {
-        return false
-      }
-
-      // Price range filter
-      if (filters.startingPrice && car.price < filters.startingPrice) {
-        return false
-      }
-      if (filters.endingPrice && car.price > filters.endingPrice) {
-        return false
-      }
-
-      // Location filter
-      if (filters.location && car.location !== filters.location) {
-        return false
-      }
-
-      return true
-    })
-  }, [filters])
-
   useEffect(() => {
     // Sync with localStorage
     localStorage.setItem("compareCars", JSON.stringify(selectedCars))
   }, [selectedCars])
 
-  const toggleCarSelection = (carId: number) => {
+  const toggleCarSelection = (carId: string) => {
     setSelectedCars((prev) => {
       const newSelection = prev.includes(carId)
         ? prev.filter((id) => id !== carId)
@@ -99,8 +212,28 @@ const Vehicles = () => {
     })
   }
 
-  const handleViewDetails = (carId: number) => {
+  const handleViewDetails = (carId: string) => {
     navigate(`/vehicles/${carId}`)
+  }
+
+  // Get "On Fire" cars (most rented)
+  const onFireCars = useMemo(() => {
+    return [...cars]
+      .sort((a, b) => (b.rental_count || 0) - (a.rental_count || 0))
+      .slice(0, 3)
+      .map(car => car.id)
+  }, [cars])
+
+  if (isLoading && cars.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1 container mx-auto px-4 py-12 flex items-center justify-center">
+          <LoadingSpinner />
+        </main>
+        <Footer />
+      </div>
+    )
   }
 
   return (
@@ -151,16 +284,20 @@ const Vehicles = () => {
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-64">
-              <div className="space-y-2">
-                {brands.map((brand) => (
-                  <button
-                    key={brand}
-                    onClick={() => handleFilterChange("brand", brand)}
-                    className="w-full text-left px-4 py-2 rounded-md hover:bg-muted transition-colors"
-                  >
-                    {brand}
-                  </button>
-                ))}
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {brands.length > 0 ? (
+                  brands.map((brand) => (
+                    <button
+                      key={brand}
+                      onClick={() => handleFilterChange("brand", brand)}
+                      className="w-full text-left px-4 py-2 rounded-md hover:bg-muted transition-colors"
+                    >
+                      {brand}
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground text-sm px-4 py-2">No brands available</p>
+                )}
                 {filters.brand && (
                   <button
                     onClick={() => handleFilterChange("brand", null)}
@@ -240,7 +377,6 @@ const Vehicles = () => {
                     handleFilterChange("startingPrice", value === "" ? null : value ? Number(value) : null, true)
                   }}
                   onBlur={() => {
-                    // Close popover when user clicks outside
                     setTimeout(() => setActiveFilter(null), 200)
                   }}
                   className="w-full"
@@ -289,7 +425,6 @@ const Vehicles = () => {
                     handleFilterChange("endingPrice", value === "" ? null : value ? Number(value) : null, true)
                   }}
                   onBlur={() => {
-                    // Close popover when user clicks outside
                     setTimeout(() => setActiveFilter(null), 200)
                   }}
                   className="w-full"
@@ -308,135 +443,141 @@ const Vehicles = () => {
               </div>
             </PopoverContent>
           </Popover>
-
-          <Popover
-            open={activeFilter === "Location"}
-            onOpenChange={(open) => setActiveFilter(open ? "Location" : null)}
-          >
-            <PopoverTrigger asChild>
-              <button
-                className={`px-6 py-3 rounded-full font-medium transition-all ${
-                  filters.location
-                    ? "bg-primary text-primary-foreground shadow-lg"
-                    : activeFilter === "Location"
-                      ? "bg-primary text-primary-foreground shadow-lg"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                }`}
-              >
-                Location {filters.location && `(${filters.location})`}
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64">
-              <div className="space-y-2">
-                {locations.map((location) => (
-                  <button
-                    key={location}
-                    onClick={() => handleFilterChange("location", location)}
-                    className="w-full text-left px-4 py-2 rounded-md hover:bg-muted transition-colors flex items-center gap-2"
-                  >
-                    <MapPin className="w-4 h-4 text-primary" />
-                    <span>{location}</span>
-                  </button>
-                ))}
-                {filters.location && (
-                  <button
-                    onClick={() => handleFilterChange("location", null)}
-                    className="w-full text-left px-4 py-2 rounded-md hover:bg-muted transition-colors text-muted-foreground"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-            </PopoverContent>
-          </Popover>
         </div>
+
+        {/* Loading indicator */}
+        {isLoading && (
+          <div className="flex justify-center items-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
+        )}
 
         {/* Vehicle Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          {filteredCars.map((car) => (
-            <div
-              key={car.id}
-              className={`bg-card rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all relative border-2 ${
-                selectedCars.includes(car.id) ? "border-primary" : "border-transparent"
-              }`}
-            >
-              {/* Selection Checkbox */}
-              <button
-                onClick={() => toggleCarSelection(car.id)}
-                className={`absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-md ${
-                  selectedCars.includes(car.id)
-                    ? "bg-red-500 text-white"
-                    : "bg-white/90 hover:bg-white text-muted-foreground"
+        {!isLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+            {cars.map((car) => (
+              <div
+                key={car.id}
+                className={`bg-card rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all relative border-2 ${
+                  selectedCars.includes(car.id) ? "border-primary" : "border-transparent"
                 }`}
               >
-                {selectedCars.includes(car.id) ? <Check className="w-5 h-5" /> : <Check className="w-5 h-5" />}
-              </button>
-
-              <div className="bg-gradient-to-br from-card-dark to-card-dark/80 p-8 h-48 flex items-center justify-center">
-                <CarIcon className="w-32 h-32 text-muted-foreground/30" />
-              </div>
-
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="font-heading text-xl font-bold">{car.brand}</h3>
-                    <p className="text-muted-foreground text-sm">{car.type}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-primary font-bold text-xl">${car.price}</p>
-                    <p className="text-muted-foreground text-xs">per day</p>
-                  </div>
-                </div>
-
-                {/* Location */}
-                {car.location && (
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
-                    <MapPin className="w-4 h-4 text-primary" />
-                    <span>{car.location}</span>
+                {/* On Fire Badge */}
+                {onFireCars.includes(car.id) && (
+                  <div className="absolute top-4 left-4 z-10 flex items-center gap-1 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+                    <Flame className="w-3 h-3" />
+                    On Fire
                   </div>
                 )}
 
-                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6 flex-wrap">
-                  <div className="flex items-center gap-1">
-                    <Settings className="w-4 h-4" />
-                    <span>{car.transmission === "Automatic" ? "Automat" : "Manual"}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Fuel className="w-4 h-4" />
-                    <span>{car.fuel}</span>
-                  </div>
-                  {car.ac && (
-                    <div className="flex items-center gap-1">
-                      <Wind className="w-4 h-4" />
-                      <span>Air Conditioner</span>
-                    </div>
-                  )}
+                {/* Selection Checkbox */}
+                <button
+                  onClick={() => toggleCarSelection(car.id)}
+                  className={`absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-md ${
+                    selectedCars.includes(car.id)
+                      ? "bg-red-500 text-white"
+                      : "bg-white/90 hover:bg-white text-muted-foreground"
+                  }`}
+                >
+                  <Check className="w-5 h-5" />
+                </button>
+
+                {/* Car Image - Full Width */}
+                <div className="w-full h-48 relative overflow-hidden bg-gradient-to-br from-card-dark to-card-dark/80">
+                  {car.primary_image_url ? (
+                    <img
+                      src={car.primary_image_url}
+                      alt={`${car.make} ${car.model}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.stopPropagation()
+                        e.currentTarget.style.display = "none"
+                        const fallback = e.currentTarget.nextElementSibling as HTMLElement
+                        if (fallback) {
+                          fallback.classList.remove("hidden")
+                        }
+                      }}
+                      onLoad={(e) => {
+                        const fallback = e.currentTarget.nextElementSibling as HTMLElement
+                        if (fallback) {
+                          fallback.classList.add("hidden")
+                        }
+                      }}
+                    />
+                  ) : null}
+                  <CarIcon className={`w-32 h-32 text-muted-foreground/30 absolute inset-0 m-auto ${car.primary_image_url ? "hidden" : ""}`} />
                 </div>
 
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => toggleCarSelection(car.id)}
-                    className={`flex-1 font-semibold rounded-lg h-11 ${
-                      selectedCars.includes(car.id)
-                        ? "bg-primary hover:bg-primary/90 text-primary-foreground"
-                        : "bg-muted hover:bg-muted/80 text-muted-foreground"
-                    }`}
-                  >
-                    {selectedCars.includes(car.id) ? "Selected" : "Add to compare"}
-                  </Button>
-                  <Button
-                    onClick={() => handleViewDetails(car.id)}
-                    className="flex-1 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold rounded-lg h-11"
-                  >
-                    View Details
-                  </Button>
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1">
+                      <h3 className="font-heading text-xl font-bold">{car.make}</h3>
+                      <p className="text-muted-foreground text-sm">{car.model} {car.year ? `(${car.year})` : ""}</p>
+                    </div>
+                    <div className="text-right ml-4">
+                      <p className="text-primary font-bold text-xl">${car.price_per_day}</p>
+                      <p className="text-muted-foreground text-xs">per day</p>
+                    </div>
+                  </div>
+
+                  {/* Tenant and Location Info */}
+                  <div className="mb-3 space-y-1">
+                    {car.tenantName && (
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <Building2 className="w-4 h-4" />
+                        <span>{car.tenantName}</span>
+                      </div>
+                    )}
+                    {(car.locationName || car.locationCity) && (
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <MapPin className="w-4 h-4 text-primary" />
+                        <span>{car.locationName || car.locationCity}{car.locationName && car.locationCity ? `, ${car.locationCity}` : ""}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4 flex-wrap">
+                    <div className="flex items-center gap-1">
+                      <Settings className="w-4 h-4" />
+                      <span>{car.transmission === "Automatic" ? "Automat" : "Manual"}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Fuel className="w-4 h-4" />
+                      <span>{car.fuel_type}</span>
+                    </div>
+                    {car.features?.includes("AC") && (
+                      <div className="flex items-center gap-1">
+                        <Wind className="w-4 h-4" />
+                        <span>AC</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => toggleCarSelection(car.id)}
+                      className={`flex-1 font-semibold rounded-lg h-11 ${
+                        selectedCars.includes(car.id)
+                          ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                          : "bg-muted hover:bg-muted/80 text-muted-foreground"
+                      }`}
+                    >
+                      {selectedCars.includes(car.id) ? "Selected" : "Add to compare"}
+                    </Button>
+                    <Button
+                      onClick={() => handleViewDetails(car.id)}
+                      className="flex-1 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold rounded-lg h-11"
+                    >
+                      View Details
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {filteredCars.length === 0 && (
+        {!isLoading && cars.length === 0 && (
           <div className="text-center py-12">
             <p className="text-muted-foreground text-lg">No cars found matching your criteria.</p>
           </div>

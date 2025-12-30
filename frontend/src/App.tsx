@@ -35,6 +35,7 @@ import LocationSelect from "./pages/Client/LocationSelect"
 // End User Pages
 import EndUserIndex from "./pages/EndUser/Index"
 import EndUserVehicles from "./pages/EndUser/Vehicles"
+import CarDetails from "./pages/EndUser/CarDetails"
 import CompareCars from "./pages/EndUser/CompareCars"
 import RentCar from "./pages/EndUser/RentCar"
 import Payment from "./pages/EndUser/Payment"
@@ -46,6 +47,8 @@ import EndUserProfile from "./pages/EndUser/Profile"
 import EndUserEditProfile from "./pages/EndUser/EditProfile"
 import EndUserRentalPolicy from "./pages/EndUser/RentalPolicy"
 import EndUserFAQ from "./pages/EndUser/FAQ"
+import TenantDetails from "./pages/EndUser/TenantDetails"
+import EndUserReservationDetails from "./pages/EndUser/ReservationDetails"
 import { RentalDataProvider } from "./contexts/RentalDataContext"
 
 // Other Pages
@@ -213,6 +216,7 @@ const App = () => (
               {/* End User Portal Routes */}
               <Route path="/enduser" element={<EndUserIndex />} />
               <Route path="/enduser/vehicles" element={<EndUserVehicles />} />
+              <Route path="/enduser/vehicles/:id" element={<CarDetails />} />
               <Route path="/enduser/compare" element={<CompareCars />} />
               <Route path="/enduser/rent/:id" element={<RentCar />} />
               <Route path="/enduser/payment" element={<Payment />} />
@@ -224,14 +228,17 @@ const App = () => (
               <Route path="/enduser/profile/edit" element={<EndUserEditProfile />} />
               <Route path="/enduser/rental-policy" element={<EndUserRentalPolicy />} />
               <Route path="/enduser/faq" element={<EndUserFAQ />} />
+              <Route path="/enduser/tenant/:id" element={<TenantDetails />} />
+              <Route path="/enduser/reservation/:id" element={<EndUserReservationDetails />} />
 
               {/* Legacy route redirects for backward compatibility */}
               <Route path="/compare" element={<Navigate to="/enduser/compare" replace />} />
-              <Route path="/rent/:id" element={<Navigate to="/enduser/rent/:id" replace />} />
+              <Route path="/rent/:id" element={<RentCar />} />
               <Route path="/about" element={<Navigate to="/enduser/about" replace />} />
               <Route path="/contact" element={<Navigate to="/enduser/contact" replace />} />
               <Route path="/profile" element={<Navigate to="/enduser/profile" replace />} />
               <Route path="/vehicles" element={<Navigate to="/enduser/vehicles" replace />} />
+              <Route path="/vehicles/:id" element={<CarDetails />} />
               <Route path="/rental-policy" element={<Navigate to="/enduser/rental-policy" replace />} />
 
               {/* 404 catch-all */}
