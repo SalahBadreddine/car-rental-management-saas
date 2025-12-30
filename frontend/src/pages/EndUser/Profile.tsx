@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Phone, Mail, MapPin, Edit, LogOut, Car as CarIcon, Clock, Calendar, ChevronRight, Loader2, RefreshCw } from "lucide-react";
+import { Phone, Mail, MapPin, Edit, LogOut, Car as CarIcon, Clock, Calendar, ChevronRight, Loader2, RefreshCw, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/api";
 import { getAccessToken, logout as logoutUser } from "@/lib/auth";
@@ -28,6 +28,7 @@ interface Reservation {
   status: string;
   confirmation_code?: string;
   created_at: string;
+  tenant_id?: string;
   car?: {
     id: string;
     make: string;
@@ -35,6 +36,14 @@ interface Reservation {
     year?: number;
     primary_image_url?: string;
     price_per_day: number;
+    tenant_id?: string;
+  };
+  tenant?: {
+    id: string;
+    name: string;
+    contact_email?: string;
+    phone_number?: string;
+    logo_url?: string;
   };
 }
 
@@ -94,6 +103,7 @@ const Profile = () => {
           reservationsData.map(async (reservation: any) => {
             // Backend may return car data in 'cars' field (nested object from join)
             let carData = reservation.cars || reservation.car;
+            const tenantId = reservation.tenant_id || carData?.tenant_id;
             
             // If car data is not in the response, fetch it separately
             if (!carData && reservation.car_id) {
@@ -106,6 +116,7 @@ const Profile = () => {
                   year: car.year,
                   primary_image_url: car.primary_image_url,
                   price_per_day: car.price_per_day,
+                  tenant_id: car.tenant_id,
                 } : undefined;
               } catch (error) {
                 console.error('Error fetching car for reservation:', reservation.car_id, error);
@@ -119,12 +130,31 @@ const Profile = () => {
                 year: carData.year,
                 primary_image_url: carData.primary_image_url,
                 price_per_day: carData.price_per_day,
+                tenant_id: carData.tenant_id,
               };
+            }
+
+            // Fetch tenant information
+            let tenantData = null;
+            if (tenantId) {
+              try {
+                tenantData = await enduserCarsApi.getTenantById(tenantId);
+              } catch (error) {
+                console.error('Error fetching tenant for reservation:', tenantId, error);
+              }
             }
 
             return {
               ...reservation,
               car: carData,
+              tenant: tenantData ? {
+                id: tenantData.id,
+                name: tenantData.name,
+                contact_email: tenantData.contact_email,
+                phone_number: tenantData.phone_number,
+                logo_url: tenantData.logo_url,
+              } : undefined,
+              tenant_id: tenantId,
             };
           })
         );
@@ -331,19 +361,42 @@ const Profile = () => {
                             {daysLeft > 0 ? `${daysLeft} Day${daysLeft !== 1 ? 's' : ''} Left` : 'Due Today'}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-2">
                           <Calendar className="w-4 h-4" />
                           <span className="text-sm">
                             Return Date: {format(new Date(reservation.end_date), "dd/MM/yyyy 'at' hh:mm a")}
                           </span>
                         </div>
                         
-                        <Button 
-                          onClick={() => navigate(`/vehicles/${reservation.car_id}`)}
-                          className="bg-[#D32F2F] hover:bg-[#B71C1C] text-white font-semibold px-6 py-2 rounded-lg"
-                        >
-                          Details
-                        </Button>
+                        {reservation.tenant && (
+                          <div 
+                            className="flex items-center gap-2 text-muted-foreground mb-4 cursor-pointer hover:text-primary transition-colors"
+                            onClick={() => reservation.tenant_id && navigate(`/enduser/tenant/${reservation.tenant_id}`)}
+                          >
+                            <Building2 className="w-4 h-4" />
+                            <span className="text-sm">
+                              {reservation.tenant.name}
+                              {reservation.tenant.phone_number && ` • ${reservation.tenant.phone_number}`}
+                            </span>
+                            <ChevronRight className="w-3 h-3" />
+                          </div>
+                        )}
+                        
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={() => navigate(`/enduser/reservation/${reservation.id}`)}
+                            className="flex-1 bg-[#D32F2F] hover:bg-[#B71C1C] text-white font-semibold px-4 py-2 rounded-lg"
+                          >
+                            View Details
+                          </Button>
+                          <Button 
+                            onClick={() => navigate(`/vehicles/${reservation.car_id}`)}
+                            variant="outline"
+                            className="px-4 py-2 rounded-lg"
+                          >
+                            Car Info
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -387,19 +440,42 @@ const Profile = () => {
                         </span>
                       </div>
                       
-                      <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                      <div className="flex items-center gap-2 text-muted-foreground mb-2">
                         <Calendar className="w-4 h-4" />
                         <span className="text-sm">
                           Pick-Up Date: {format(new Date(reservation.start_date), "dd/MM/yyyy 'at' hh:mm a")}
                         </span>
                       </div>
                       
-                      <Button 
-                        onClick={() => navigate(`/vehicles/${reservation.car_id}`)}
-                        className="bg-[#D32F2F] hover:bg-[#B71C1C] text-white font-semibold px-6 py-2 rounded-lg"
-                      >
-                        Details
-                      </Button>
+                      {reservation.tenant && (
+                        <div 
+                          className="flex items-center gap-2 text-muted-foreground mb-4 cursor-pointer hover:text-primary transition-colors"
+                          onClick={() => reservation.tenant_id && navigate(`/enduser/tenant/${reservation.tenant_id}`)}
+                        >
+                          <Building2 className="w-4 h-4" />
+                          <span className="text-sm">
+                            {reservation.tenant.name}
+                            {reservation.tenant.phone_number && ` • ${reservation.tenant.phone_number}`}
+                          </span>
+                          <ChevronRight className="w-3 h-3" />
+                        </div>
+                      )}
+                      
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={() => navigate(`/enduser/reservation/${reservation.id}`)}
+                          className="flex-1 bg-[#D32F2F] hover:bg-[#B71C1C] text-white font-semibold px-4 py-2 rounded-lg"
+                        >
+                          View Details
+                        </Button>
+                        <Button 
+                          onClick={() => navigate(`/vehicles/${reservation.car_id}`)}
+                          variant="outline"
+                          className="px-4 py-2 rounded-lg"
+                        >
+                          Car Info
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -468,14 +544,24 @@ const Profile = () => {
                             {reservation.confirmation_code || `#RES-${reservation.id.slice(0, 8)}`}
                           </td>
                           <td className="p-4">
-                            <Button 
-                              onClick={() => navigate(`/vehicles/${reservation.car_id}`)}
-                              variant="ghost" 
-                              size="sm"
-                              className="text-[#D32F2F] hover:text-[#B71C1C] hover:bg-[#D32F2F]/10"
-                            >
-                              Details
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button 
+                                onClick={() => navigate(`/enduser/reservation/${reservation.id}`)}
+                                variant="ghost" 
+                                size="sm"
+                                className="text-[#D32F2F] hover:text-[#B71C1C] hover:bg-[#D32F2F]/10"
+                              >
+                                View Details
+                              </Button>
+                              <Button 
+                                onClick={() => navigate(`/vehicles/${reservation.car_id}`)}
+                                variant="ghost" 
+                                size="sm"
+                                className="text-muted-foreground hover:text-primary"
+                              >
+                                Car Info
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       );

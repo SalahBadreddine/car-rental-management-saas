@@ -259,6 +259,25 @@ export const enduserCarsApi = {
   },
 
   /**
+   * Get unavailable dates for a car (for calendar display)
+   */
+  async getUnavailableDates(id: string): Promise<Array<{ start_date: string; end_date: string }>> {
+    try {
+      const response = await apiRequest(`/cars/${id}/unavailable-dates`, 'GET');
+      
+      if (response.status !== 200) {
+        console.error('Failed to fetch unavailable dates:', response.data);
+        return [];
+      }
+      
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching unavailable dates:', error);
+      return [];
+    }
+  },
+
+  /**
    * Get featured cars (most rented) across all tenants
    */
   async getFeaturedCars(limit: number = 4): Promise<EndUserCar[]> {

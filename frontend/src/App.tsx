@@ -47,6 +47,8 @@ import EndUserProfile from "./pages/EndUser/Profile"
 import EndUserEditProfile from "./pages/EndUser/EditProfile"
 import EndUserRentalPolicy from "./pages/EndUser/RentalPolicy"
 import EndUserFAQ from "./pages/EndUser/FAQ"
+import TenantDetails from "./pages/EndUser/TenantDetails"
+import EndUserReservationDetails from "./pages/EndUser/ReservationDetails"
 import { RentalDataProvider } from "./contexts/RentalDataContext"
 
 // Other Pages
@@ -226,6 +228,8 @@ const App = () => (
               <Route path="/enduser/profile/edit" element={<EndUserEditProfile />} />
               <Route path="/enduser/rental-policy" element={<EndUserRentalPolicy />} />
               <Route path="/enduser/faq" element={<EndUserFAQ />} />
+              <Route path="/enduser/tenant/:id" element={<TenantDetails />} />
+              <Route path="/enduser/reservation/:id" element={<EndUserReservationDetails />} />
 
               {/* Legacy route redirects for backward compatibility */}
               <Route path="/compare" element={<Navigate to="/enduser/compare" replace />} />

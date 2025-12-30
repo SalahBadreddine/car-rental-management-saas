@@ -20,8 +20,9 @@ const RentCar = () => {
   const [selectedDates, setSelectedDates] = useState<{ from?: Date; to?: Date }>({});
   const [pickupTime, setPickupTime] = useState("10:00");
   const [returnTime, setReturnTime] = useState("17:00");
-  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [isCreatingReservation, setIsCreatingReservation] = useState(false);
+  const [unavailableDates, setUnavailableDates] = useState<Date[]>([]);
+  const [isLoadingUnavailableDates, setIsLoadingUnavailableDates] = useState(false);
 
   useEffect(() => {
     const fetchCar = async () => {
@@ -66,46 +67,39 @@ const RentCar = () => {
     fetchCar();
   }, [id, toast]);
 
-  // Check availability when dates are selected
+  // Fetch unavailable dates when car is loaded
   useEffect(() => {
-    const checkAvailability = async () => {
-      if (!car || !selectedDates.from || !selectedDates.to) return;
+    const fetchUnavailableDates = async () => {
+      if (!id || !car) return;
 
-      setIsCheckingAvailability(true);
+      setIsLoadingUnavailableDates(true);
       try {
-        const startDate = new Date(selectedDates.from);
-        startDate.setHours(parseInt(pickupTime.split(":")[0]), parseInt(pickupTime.split(":")[1]), 0, 0);
+        const reservations = await enduserCarsApi.getUnavailableDates(id);
         
-        const endDate = new Date(selectedDates.to);
-        endDate.setHours(parseInt(returnTime.split(":")[0]), parseInt(returnTime.split(":")[1]), 0, 0);
+        // Convert reservation date ranges to individual dates
+        const dates: Date[] = [];
+        reservations.forEach((reservation) => {
+          const startDate = new Date(reservation.start_date);
+          const endDate = new Date(reservation.end_date);
+          
+          // Add all dates in the range (inclusive)
+          const currentDate = new Date(startDate);
+          while (currentDate <= endDate) {
+            dates.push(new Date(currentDate));
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+        });
 
-        const availability = await enduserCarsApi.checkAvailability(
-          car.id,
-          startDate.toISOString(),
-          endDate.toISOString()
-        );
-
-        if (availability && !availability.isAvailable) {
-          toast({
-            title: "Not Available",
-            description: "This car is not available for the selected dates. Please choose different dates.",
-            variant: "destructive",
-          });
-          setSelectedDates({});
-        }
+        setUnavailableDates(dates);
       } catch (error) {
-        console.error('Error checking availability:', error);
+        console.error('Error fetching unavailable dates:', error);
       } finally {
-        setIsCheckingAvailability(false);
+        setIsLoadingUnavailableDates(false);
       }
     };
 
-    const timeoutId = setTimeout(() => {
-      checkAvailability();
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [selectedDates, pickupTime, returnTime, car, toast]);
+    fetchUnavailableDates();
+  }, [id, car]);
 
   if (isLoading) {
     return (
@@ -150,6 +144,9 @@ const RentCar = () => {
   }).flat();
 
   const handleContinue = async () => {
+    // Prevent multiple clicks
+    if (isCreatingReservation) return;
+
     if (!selectedDates.from || !selectedDates.to) {
       toast({
         title: "Missing Information",
@@ -168,18 +165,45 @@ const RentCar = () => {
       return;
     }
 
+    // Double-check availability before creating
+    const pickupDate = new Date(selectedDates.from);
+    const [pickupHour, pickupMinute] = pickupTime.split(":").map(Number);
+    pickupDate.setHours(pickupHour, pickupMinute, 0, 0);
+
+    const returnDate = new Date(selectedDates.to);
+    const [returnHour, returnMinute] = returnTime.split(":").map(Number);
+    returnDate.setHours(returnHour, returnMinute, 0, 0);
+
+    // Check if selected dates overlap with unavailable dates
+    const selectedDateRange: Date[] = [];
+    const currentDate = new Date(pickupDate);
+    while (currentDate <= returnDate) {
+      selectedDateRange.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    const hasOverlap = selectedDateRange.some((selectedDate) => {
+      return unavailableDates.some((unavailableDate) => {
+        const unavailable = new Date(unavailableDate);
+        unavailable.setHours(0, 0, 0, 0);
+        const checkDate = new Date(selectedDate);
+        checkDate.setHours(0, 0, 0, 0);
+        return unavailable.getTime() === checkDate.getTime();
+      });
+    });
+
+    if (hasOverlap) {
+      toast({
+        title: "Not Available",
+        description: "This car is not available for the selected dates. Please choose different dates.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsCreatingReservation(true);
 
     try {
-      // Combine dates with times
-      const pickupDate = new Date(selectedDates.from);
-      const [pickupHour, pickupMinute] = pickupTime.split(":").map(Number);
-      pickupDate.setHours(pickupHour, pickupMinute, 0, 0);
-
-      const returnDate = new Date(selectedDates.to);
-      const [returnHour, returnMinute] = returnTime.split(":").map(Number);
-      returnDate.setHours(returnHour, returnMinute, 0, 0);
-
       const totalPrice = calculateTotalPrice();
 
       // Create reservation directly (skipping payment)
@@ -206,7 +230,7 @@ const RentCar = () => {
         });
 
         // Navigate to confirmation page
-        navigate("/rent/confirmation", {
+        navigate("/enduser/confirmation", {
           state: {
             reservationId: reservation.id || reservation.confirmation_code || `RES-${Date.now()}`,
             reservation: reservation,
@@ -322,25 +346,43 @@ const RentCar = () => {
             
             {/* Calendar */}
             <div className="bg-card rounded-lg p-6 mb-6 border border-border">
-              <Calendar
-                mode="range"
-                selected={{
-                  from: selectedDates.from,
-                  to: selectedDates.to,
-                }}
-                onSelect={(range) => {
-                  setSelectedDates({
-                    from: range?.from,
-                    to: range?.to,
-                  });
-                }}
-                numberOfMonths={1}
-                className="rounded-md"
-                disabled={(date) => {
-                  // Disable past dates
-                  return date < new Date(new Date().setHours(0, 0, 0, 0));
-                }}
-              />
+              {isLoadingUnavailableDates ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  <span className="ml-2 text-muted-foreground">Loading availability...</span>
+                </div>
+              ) : (
+                <Calendar
+                  mode="range"
+                  selected={{
+                    from: selectedDates.from,
+                    to: selectedDates.to,
+                  }}
+                  onSelect={(range) => {
+                    setSelectedDates({
+                      from: range?.from,
+                      to: range?.to,
+                    });
+                  }}
+                  numberOfMonths={1}
+                  className="rounded-md"
+                  disabled={(date) => {
+                    // Disable past dates
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    if (date < today) return true;
+
+                    // Disable unavailable dates
+                    return unavailableDates.some((unavailableDate) => {
+                      const unavailable = new Date(unavailableDate);
+                      unavailable.setHours(0, 0, 0, 0);
+                      const checkDate = new Date(date);
+                      checkDate.setHours(0, 0, 0, 0);
+                      return unavailable.getTime() === checkDate.getTime();
+                    });
+                  }}
+                />
+              )}
             </div>
 
             {/* Time Selection */}
@@ -387,12 +429,9 @@ const RentCar = () => {
               <div className="bg-muted rounded-lg p-4 mb-4">
                 <p className="text-3xl font-bold text-primary">${totalPrice || car.price_per_day}</p>
               </div>
-              {isCheckingAvailability && (
-                <p className="text-sm text-muted-foreground mb-4">Checking availability...</p>
-              )}
               <Button
                 onClick={handleContinue}
-                disabled={!selectedDates.from || !selectedDates.to || isCheckingAvailability || isCreatingReservation || car.status !== 'available'}
+                disabled={!selectedDates.from || !selectedDates.to || isCreatingReservation || car.status !== 'available' || isLoadingUnavailableDates}
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-6 text-lg"
               >
                 {isCreatingReservation ? (

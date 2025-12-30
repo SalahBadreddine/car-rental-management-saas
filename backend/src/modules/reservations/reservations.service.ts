@@ -1,8 +1,8 @@
-import { Inject, Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../common/providers/supabase.provider';
-import { CreateReservationDto } from './dto/create-reservation.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { CreateReservationDto } from './dto/create-reservation.dto';
 
 @Injectable()
 export class ReservationsService {
@@ -50,6 +50,23 @@ export class ReservationsService {
     }
 
     const totalPrice = dto.totalPrice ?? (days * car.price_per_day);
+
+    // Check for overlapping reservations to prevent duplicates
+    // A reservation overlaps if: start_date <= endDate AND end_date >= startDate
+    const { data: overlapping, error: overlapError } = await this.supabaseClient
+      .from('reservations')
+      .select('id')
+      .eq('car_id', dto.carId)
+      .neq('status', 'cancelled')
+      .or(`and(start_date.lte.${dto.endDate},end_date.gte.${dto.startDate})`);
+
+    if (overlapError) {
+      throw new InternalServerErrorException(`Failed to check availability: ${overlapError.message}`);
+    }
+
+    if (overlapping && overlapping.length > 0) {
+      throw new BadRequestException('Car is not available for the selected dates. Please choose different dates.');
+    }
 
     const payload = {
       tenant_id: reservationTenantId,
@@ -253,6 +270,29 @@ export class ReservationsService {
 
     if (error) {
       throw new InternalServerErrorException(`Reservation not found: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  async findOneByCustomer(id: string, customerId: string) {
+    if (!customerId) {
+      throw new BadRequestException('Customer ID is required.');
+    }
+
+    const { data, error } = await this.supabaseClient
+      .from('reservations')
+      .select(`
+        *,
+        cars (id, make, model, year, primary_image_url, price_per_day),
+        profiles:customer_id (id, full_name, phone_number)
+      `)
+      .eq('id', id)
+      .eq('customer_id', customerId)
+      .single();
+
+    if (error || !data) {
+      throw new InternalServerErrorException('Reservation not found');
     }
 
     return data;

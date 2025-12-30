@@ -24,6 +24,8 @@ const CarDetails = () => {
   const [similarCars, setSimilarCars] = useState<EndUserCar[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
+  const [unavailableDates, setUnavailableDates] = useState<Date[]>([]);
+  const [isLoadingUnavailableDates, setIsLoadingUnavailableDates] = useState(false);
 
   // Fetch tenant and location info for a car
   const enrichCarWithDetails = async (carData: EndUserCar): Promise<CarWithDetails> => {
@@ -88,6 +90,40 @@ const CarDetails = () => {
 
     fetchCar();
   }, [id, toast]);
+
+  // Fetch unavailable dates when car is loaded
+  useEffect(() => {
+    const fetchUnavailableDates = async () => {
+      if (!id || !car) return;
+
+      setIsLoadingUnavailableDates(true);
+      try {
+        const reservations = await enduserCarsApi.getUnavailableDates(id);
+        
+        // Convert reservation date ranges to individual dates
+        const dates: Date[] = [];
+        reservations.forEach((reservation) => {
+          const startDate = new Date(reservation.start_date);
+          const endDate = new Date(reservation.end_date);
+          
+          // Add all dates in the range (inclusive)
+          const currentDate = new Date(startDate);
+          while (currentDate <= endDate) {
+            dates.push(new Date(currentDate));
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+        });
+
+        setUnavailableDates(dates);
+      } catch (error) {
+        console.error('Error fetching unavailable dates:', error);
+      } finally {
+        setIsLoadingUnavailableDates(false);
+      }
+    };
+
+    fetchUnavailableDates();
+  }, [id, car]);
 
   if (isLoading) {
     return (
@@ -165,9 +201,13 @@ const CarDetails = () => {
               {/* Tenant and Location Info */}
               <div className="mb-6 space-y-2">
                 {car.tenantName && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
+                  <div 
+                    className="flex items-center gap-2 text-muted-foreground cursor-pointer hover:text-primary transition-colors"
+                    onClick={() => navigate(`/enduser/tenant/${car.tenant_id}`)}
+                  >
                     <Building2 className="w-4 h-4" />
                     <span className="text-sm font-medium">{car.tenantName}</span>
+                    <ChevronRight className="w-3 h-3" />
                   </div>
                 )}
                 {(car.locationName || car.locationCity) && (
@@ -234,24 +274,46 @@ const CarDetails = () => {
                   <ChevronRight className="w-5 h-5" />
                 </h2>
               </div>
-              <CalendarComponent
-                mode="multiple"
-                selected={selectedDates}
-                onSelect={(dates) => {
-                  try {
-                    if (dates) {
-                      const dateArray = Array.isArray(dates) ? dates : [dates];
-                      setSelectedDates(dateArray.filter((date): date is Date => date instanceof Date));
-                    } else {
+              {isLoadingUnavailableDates ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  <span className="ml-2 text-muted-foreground">Loading availability...</span>
+                </div>
+              ) : (
+                <CalendarComponent
+                  mode="multiple"
+                  selected={selectedDates}
+                  onSelect={(dates) => {
+                    try {
+                      if (dates) {
+                        const dateArray = Array.isArray(dates) ? dates : [dates];
+                        setSelectedDates(dateArray.filter((date): date is Date => date instanceof Date));
+                      } else {
+                        setSelectedDates([]);
+                      }
+                    } catch (error) {
+                      console.error("Error selecting dates:", error);
                       setSelectedDates([]);
                     }
-                  } catch (error) {
-                    console.error("Error selecting dates:", error);
-                    setSelectedDates([]);
-                  }
-                }}
-                className="rounded-md border-0"
-              />
+                  }}
+                  disabled={(date) => {
+                    // Disable past dates
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    if (date < today) return true;
+
+                    // Disable unavailable dates
+                    return unavailableDates.some((unavailableDate) => {
+                      const unavailable = new Date(unavailableDate);
+                      unavailable.setHours(0, 0, 0, 0);
+                      const checkDate = new Date(date);
+                      checkDate.setHours(0, 0, 0, 0);
+                      return unavailable.getTime() === checkDate.getTime();
+                    });
+                  }}
+                  className="rounded-md border-0"
+                />
+              )}
             </div>
           </div>
 

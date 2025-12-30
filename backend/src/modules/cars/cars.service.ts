@@ -299,6 +299,26 @@ export class CarsService {
     };
   }
 
+  /**
+   * Get all unavailable dates for a car (for calendar display)
+   * Returns all reservations that are not cancelled
+   */
+  async getUnavailableDates(carId: string) {
+    const { data: reservations, error } = await this.supabaseClient
+      .from('reservations')
+      .select('id, start_date, end_date, status')
+      .eq('car_id', carId)
+      .neq('status', 'cancelled')
+      .gte('end_date', new Date().toISOString()) // Only future reservations
+      .order('start_date', { ascending: true });
+
+    if (error) {
+      throw new InternalServerErrorException(`Failed to fetch unavailable dates: ${error.message}`);
+    }
+
+    return reservations ?? [];
+  }
+
   async updateStatus(id: string, status: string, tenantId: string) {
     if (!tenantId) {
       throw new BadRequestException('Tenant ID is required.');
