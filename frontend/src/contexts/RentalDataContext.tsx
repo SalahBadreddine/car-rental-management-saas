@@ -83,7 +83,7 @@ export function RentalDataProvider({ children }: { children: React.ReactNode }) 
       id: "policy-1",
       section: "1. Renter Requirements",
       items: [
-        "**Minimum Age:** The primary renter must be 21 years of age or older. A daily surcharge of $25 applies to renters aged 21-24.",
+        "**Minimum Age:** The primary renter must be 21 years of age or older. A daily surcharge of 2500 DZD applies to renters aged 21-24.",
         "**Driver's License:** A valid, non-expired driver's license, held for at least one year, must be presented at the time of rental.",
         "**Payment Method:** A major credit card (Visa, MasterCard, Amex) in the primary renter's name is required for both the rental charges and the security deposit.",
       ],
@@ -92,7 +92,7 @@ export function RentalDataProvider({ children }: { children: React.ReactNode }) 
       id: "policy-2",
       section: "2. Payments and Deposits",
       items: [
-        "**Security Deposit:** A refundable security deposit of $200 to $500 (depending on vehicle class) will be authorized on the credit card at pickup. This amount will be released upon the satisfactory return of the vehicle.",
+        "**Security Deposit:** A refundable security deposit of 20000 DZD to 50000 DZD (depending on vehicle class) will be authorized on the credit card at pickup. This amount will be released upon the satisfactory return of the vehicle.",
         "**Taxes and Fees:** All quoted rental prices are exclusive of local taxes, airport surcharges, and licensing fees, which will be itemized on the final invoice.",
         "**Payment Timing:** The estimated total rental charges must be paid in full at the time of vehicle pickup.",
       ],
@@ -103,7 +103,7 @@ export function RentalDataProvider({ children }: { children: React.ReactNode }) 
       items: [
         "**Basic Coverage:** Standard state-mandated minimum liability insurance is included in the rental price.",
         "**Collision Damage Waiver (CDW):** Available for purchase. Reduces the renter's financial responsibility for damage to the RentoGo vehicle.",
-        "**Supplemental Liability Insurance (SLI):** Available for purchase. Provides additional liability protection up to $1 million.",
+        "**Supplemental Liability Insurance (SLI):** Available for purchase. Provides additional liability protection up to 1 million DZD.",
       ],
     },
     {
@@ -127,22 +127,18 @@ export function RentalDataProvider({ children }: { children: React.ReactNode }) 
 
   const addFAQ = useCallback((item: FAQItem) => {
     setFaqItems((prev) => [...prev, { ...item, id: Date.now().toString() }])
-    // TODO: API call to persist FAQ
   }, [])
 
   const updateFAQ = useCallback((id: string, updates: Partial<FAQItem>) => {
     setFaqItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...updates } : item)))
-    // TODO: API call to persist FAQ
   }, [])
 
   const deleteFAQ = useCallback((id: string) => {
     setFaqItems((prev) => prev.filter((item) => item.id !== id))
-    // TODO: API call to persist FAQ
   }, [])
 
   const updatePolicy = useCallback((sections: PolicySection[]) => {
     setPolicySections(sections)
-    // TODO: API call to persist policy
   }, [])
 
   return (

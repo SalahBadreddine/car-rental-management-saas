@@ -58,7 +58,7 @@ export default function EditVehicle() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [vehicle, setVehicle] = useState<Car | null>(null)
   
-  // Form state
+
   const [formData, setFormData] = useState({
     make: "",
     model: "",
@@ -74,11 +74,11 @@ export default function EditVehicle() {
     status: "available",
   })
   
-  // Image state
+
   const [primaryImage, setPrimaryImage] = useState<File | null>(null)
   const [primaryImagePreview, setPrimaryImagePreview] = useState<string | null>(null)
   
-  // Features state
+
   const [features, setFeatures] = useState({
     abs: false,
     airBags: false,
@@ -88,7 +88,7 @@ export default function EditVehicle() {
     gps: false,
   })
 
-  // Fetch vehicle data
+
   useEffect(() => {
     const fetchVehicle = async () => {
       if (!id) return
@@ -99,7 +99,7 @@ export default function EditVehicle() {
         if (data) {
           setVehicle(data)
           
-          // Populate form
+
           setFormData({
             make: data.make || "",
             model: data.model || "",
@@ -115,12 +115,12 @@ export default function EditVehicle() {
             status: data.status || "available",
           })
           
-          // Set image preview
+
           if (data.primary_image_url) {
             setPrimaryImagePreview(data.primary_image_url)
           }
           
-          // Parse features
+
           const carFeatures = Array.isArray(data.features) 
             ? data.features 
             : (typeof data.features === 'string' ? JSON.parse(data.features || '[]') : [])
@@ -149,12 +149,12 @@ export default function EditVehicle() {
     fetchVehicle()
   }, [id])
 
-  // Handle input change
+
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  // Handle image change
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -163,7 +163,7 @@ export default function EditVehicle() {
     }
   }
 
-  // Get selected features as array
+
   const getFeaturesList = (): string[] => {
     const featuresList: string[] = []
     if (features.abs) featuresList.push("ABS")
@@ -175,7 +175,7 @@ export default function EditVehicle() {
     return featuresList
   }
 
-  // Submit form
+
   const handleSubmit = async () => {
     if (!id) return
 
@@ -203,7 +203,7 @@ export default function EditVehicle() {
       )
 
       if (result) {
-        // Also update status if changed
+
         if (formData.status !== vehicle?.status) {
           await carsApi.updateCarStatus(id, formData.status)
         }
@@ -262,9 +262,9 @@ export default function EditVehicle() {
         <h1 className="text-4xl font-bold mb-8">Edit Vehicle</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column */}
+
           <div className="lg:col-span-1 space-y-6">
-            {/* Basic Info */}
+
             <Card className="p-6 border rounded-xl">
               <h3 className="font-bold text-lg mb-4">Basic Information</h3>
               <div className="space-y-4">
@@ -348,7 +348,7 @@ export default function EditVehicle() {
               </div>
             </Card>
 
-            {/* Car Image */}
+
             <Card className="p-6 border rounded-xl">
               <h3 className="font-bold text-lg mb-4">Vehicle Image</h3>
               <div 
@@ -374,9 +374,9 @@ export default function EditVehicle() {
             </Card>
           </div>
 
-          {/* Right Column */}
+
           <div className="lg:col-span-2 space-y-6">
-            {/* Technical Specification */}
+
             <Card className="p-6 border rounded-xl">
               <h3 className="font-bold text-xl mb-6">Technical Specification</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
@@ -427,7 +427,7 @@ export default function EditVehicle() {
               </div>
             </Card>
 
-            {/* Car Features */}
+
             <Card className="p-6 border rounded-xl">
               <h3 className="font-bold text-xl mb-4">Car Features</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -450,7 +450,7 @@ export default function EditVehicle() {
               </div>
             </Card>
 
-            {/* Color */}
+
             <Card className="p-6 border rounded-xl">
               <h3 className="font-bold text-xl mb-4">Color</h3>
               <Select value={formData.color} onValueChange={(v) => handleChange("color", v)}>
@@ -465,7 +465,7 @@ export default function EditVehicle() {
               </Select>
             </Card>
 
-            {/* Action Buttons */}
+
             <div className="flex gap-4">
               <Button
                 onClick={() => navigate(`/client/vehicles/${id}`)}

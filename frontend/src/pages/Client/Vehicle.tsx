@@ -6,13 +6,13 @@ import Header from "@/components/Client/Header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Settings, Fuel, Wind, Search, CarIcon, MapPin, Check, Plus, Loader2, Trash2 } from "lucide-react"
+import { Settings, Fuel, Wind, Search, CarIcon, MapPin, Check, Plus, Loader2, Trash2, Star } from "lucide-react"
 import ClientFooter from "@/components/Client/Footer"
 import { carsApi, type Car, type SearchFilters } from "@/services/carsApi"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/AuthContext"
 
-// Static filter options (categories)
+
 const carTypes: Array<{ value: string; label: string; icon: string }> = [
   { value: "Sedan", label: "Sedan", icon: "🚙" },
   { value: "SUV", label: "SUV", icon: "🚙" },
@@ -22,11 +22,11 @@ const carTypes: Array<{ value: string; label: string; icon: string }> = [
   { value: "Luxury", label: "Luxury", icon: "✨" },
 ]
 
-// Format currency helper
+
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'DZD',
     minimumFractionDigits: 0,
   }).format(amount)
 }
@@ -36,7 +36,7 @@ const Vehicles = () => {
   const { toast } = useToast()
   const { selectedLocation } = useAuth()
   
-  // State
+
   const [cars, setCars] = useState<Car[]>([])
   const [brands, setBrands] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -59,7 +59,7 @@ const Vehicles = () => {
     ending: "",
   })
 
-  // Fetch cars on mount or when location changes
+
   useEffect(() => {
     const fetchCars = async () => {
       setIsLoading(true)
@@ -85,7 +85,7 @@ const Vehicles = () => {
     fetchCars()
   }, [selectedLocation])
 
-  // Handle filter change
+
   const handleFilterChange = (key: keyof SearchFilters, value: any, keepOpen = false) => {
     setFilters((prev) => ({ ...prev, [key]: value || undefined }))
     if (!keepOpen) {
@@ -93,7 +93,7 @@ const Vehicles = () => {
     }
   }
 
-  // Apply search with API
+
   const handleSearch = async () => {
     setIsLoading(true)
     try {
@@ -115,10 +115,10 @@ const Vehicles = () => {
     }
   }
 
-  // Filter cars locally (for instant feedback)
+
   const filteredCars = useMemo(() => {
     return cars.filter((car) => {
-      // Search filter
+
       if (filters.search) {
         const searchLower = filters.search.toLowerCase()
         if (
@@ -131,17 +131,17 @@ const Vehicles = () => {
         }
       }
 
-      // Brand filter
+
       if (filters.brand && car.make !== filters.brand) {
         return false
       }
 
-      // Type filter
+
       if (filters.type && car.category !== filters.type) {
         return false
       }
 
-      // Price range filter
+
       if (filters.startingPrice && car.price_per_day < filters.startingPrice) {
         return false
       }
@@ -153,10 +153,6 @@ const Vehicles = () => {
     })
   }, [cars, filters])
 
-  useEffect(() => {
-    // Sync with localStorage
-    localStorage.setItem("compareCars", JSON.stringify(selectedCars))
-  }, [selectedCars])
 
   const toggleCarSelection = (carId: string) => {
     setSelectedCars((prev) => {
@@ -209,12 +205,35 @@ const Vehicles = () => {
     }
   }
 
+  const handleToggleFeatured = async (carId: string, currentFeatured: boolean, e: React.MouseEvent) => {
+    e.stopPropagation()
+    
+    try {
+      const result = await carsApi.toggleFeatured(carId, !currentFeatured)
+      if (result) {
+        setCars(prev => prev.map(car => 
+          car.id === carId ? { ...car, is_featured: !currentFeatured } : car
+        ))
+        toast({
+          title: "Success",
+          description: currentFeatured ? "Removed from Best Deals" : "Added to Best Deals",
+        })
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to update featured status.",
+        variant: "destructive",
+      })
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
 
       <main className="flex-1 container mx-auto px-4 py-12">
-        {/* Page Title */}
+
         <div className="text-center mb-8">
           <h1 className="font-heading text-4xl md:text-5xl font-bold mb-4 leading-tight">
             Manage Your Fleet
@@ -223,7 +242,7 @@ const Vehicles = () => {
           </h1>
         </div>
 
-        {/* Search Bar */}
+
         <div className="mb-8">
           <div className="relative max-w-4xl mx-auto flex gap-2">
             <div className="flex-1 relative">
@@ -249,7 +268,7 @@ const Vehicles = () => {
           </div>
         </div>
 
-        {/* Filter Controls */}
+
         <div className="flex flex-wrap justify-center gap-4 mb-12">
           {/* Brand Filter */}
           <Popover open={activeFilter === "Brand"} onOpenChange={(open) => setActiveFilter(open ? "Brand" : null)}>
@@ -426,7 +445,7 @@ const Vehicles = () => {
           </Popover>
         </div>
 
-        {/* Results Header */}
+
         <div className="flex justify-between items-center mb-6">
           <p className="text-muted-foreground">
             {isLoading ? "Loading..." : `${filteredCars.length} vehicle${filteredCars.length !== 1 ? 's' : ''} found`}
@@ -440,14 +459,14 @@ const Vehicles = () => {
           </Button>
         </div>
 
-        {/* Loading State */}
+
         {isLoading && (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-12 h-12 animate-spin text-[#DC2626]" />
           </div>
         )}
 
-        {/* Empty State */}
+
         {!isLoading && filteredCars.length === 0 && (
           <div className="text-center py-20">
             <CarIcon className="w-20 h-20 text-muted-foreground/30 mx-auto mb-4" />
@@ -467,7 +486,7 @@ const Vehicles = () => {
           </div>
         )}
 
-        {/* Vehicle Grid */}
+
         {!isLoading && filteredCars.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
             {filteredCars.map((car) => (
@@ -477,7 +496,7 @@ const Vehicles = () => {
                   selectedCars.includes(car.id) ? "border-primary" : "border-transparent"
                 }`}
               >
-                {/* Selection Checkbox */}
+
                 <button
                   onClick={() => toggleCarSelection(car.id)}
                   className={`absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-md ${
@@ -489,7 +508,7 @@ const Vehicles = () => {
                   <Check className="w-5 h-5" />
                 </button>
 
-                {/* Delete Button */}
+
                 <button
                   onClick={(e) => handleDeleteCar(car.id, e)}
                   className="absolute top-4 left-4 z-10 w-8 h-8 rounded-full flex items-center justify-center bg-white/90 hover:bg-red-500 hover:text-white text-muted-foreground transition-colors shadow-md"
@@ -497,7 +516,20 @@ const Vehicles = () => {
                   <Trash2 className="w-4 h-4" />
                 </button>
 
-                {/* Car Image - 16:9 aspect ratio */}
+
+                <button
+                  onClick={(e) => handleToggleFeatured(car.id, car.is_featured || false, e)}
+                  className={`absolute top-4 left-14 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-md ${
+                    car.is_featured
+                      ? "bg-yellow-400 text-yellow-900"
+                      : "bg-white/90 hover:bg-yellow-400 hover:text-yellow-900 text-muted-foreground"
+                  }`}
+                  title={car.is_featured ? "Remove from Best Deals" : "Add to Best Deals"}
+                >
+                  <Star className={`w-4 h-4 ${car.is_featured ? 'fill-current' : ''}`} />
+                </button>
+
+
                 <div className="relative aspect-video bg-gradient-to-br from-card-dark to-card-dark/80 overflow-hidden">
                   {car.primary_image_url ? (
                     <img
@@ -524,8 +556,8 @@ const Vehicles = () => {
                     </div>
                   </div>
 
-                  {/* Status Badge */}
-                  <div className="mb-4">
+
+                  <div className="mb-4 flex gap-2 flex-wrap">
                     <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
                       car.status === 'available' ? 'bg-green-100 text-green-800' :
                       car.status === 'rented' ? 'bg-blue-100 text-blue-800' :
@@ -533,9 +565,15 @@ const Vehicles = () => {
                     }`}>
                       {car.status}
                     </span>
+                    {car.is_featured && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        <Star className="w-3 h-3 fill-current" />
+                        Best Deal
+                      </span>
+                    )}
                   </div>
 
-                  {/* Specs */}
+
                   <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6">
                     <div className="flex items-center gap-1">
                       <Settings className="w-4 h-4" />
@@ -572,7 +610,7 @@ const Vehicles = () => {
           </div>
         )}
 
-        {/* Compare Bar */}
+
         {selectedCars.length > 0 && (
           <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-card shadow-xl rounded-full px-8 py-4 flex items-center gap-4 border-2 border-primary z-50">
             <span className="font-medium">{selectedCars.length} car{selectedCars.length > 1 ? 's' : ''} selected</span>

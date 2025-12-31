@@ -12,7 +12,7 @@ const ClientContact = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
 
-      {/* Hero Section with Contact Form */}
+
       <HeroBackground trace={traceCar} car={heroCar}>
         <div className="max-w-xl">
           <div className="bg-black/80 backdrop-blur-sm rounded-2xl p-8">

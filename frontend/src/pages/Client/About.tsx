@@ -12,7 +12,7 @@ const ClientAbout = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
 
-      {/* Hero Section */}
+
       <HeroBackground trace={traceCar} car={heroCar}>
         <div>
           <h1 className="font-heading text-5xl md:text-6xl font-bold mb-4 leading-tight">
@@ -25,7 +25,7 @@ const ClientAbout = () => {
         </div>
       </HeroBackground>
 
-      {/* Our Foundation Section */}
+
       <section className="py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
@@ -76,7 +76,7 @@ const ClientAbout = () => {
         </div>
       </section>
 
-      {/* Ready to hit the road Section */}
+
       <section className="py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">

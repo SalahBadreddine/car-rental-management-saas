@@ -7,13 +7,18 @@ import { X, Plus, ArrowLeft, Check, X as XIcon, Settings, Fuel, Wind, Car as Car
 import { enduserCarsApi, type EndUserCar } from "@/services/enduserCarsApi";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
+import { useTenantOptional } from "@/contexts/TenantContext";
 
 const CompareCars = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const tenantContext = useTenantOptional();
+  const tenantSlug = tenantContext?.tenantSlug || '';
+  const basePath = tenantSlug ? `/${tenantSlug}` : '';
+  
   const [selectedCarIds, setSelectedCarIds] = useState<string[]>(() => {
-    // Get car IDs from location state or localStorage
+    // Car IDs from location or storage
     const state = location.state as { carIds?: string[] } | null;
     if (state?.carIds) return state.carIds;
     const stored = localStorage.getItem("compareCars");
@@ -24,7 +29,7 @@ const CompareCars = () => {
 
   const maxCars = 4;
 
-  // Fetch cars when IDs change
+
   useEffect(() => {
     const fetchCars = async () => {
       if (selectedCarIds.length === 0) {
@@ -61,7 +66,7 @@ const CompareCars = () => {
   };
 
   const handleAddCar = () => {
-    navigate("/vehicles", { state: { fromCompare: true } });
+    navigate(`${basePath}/vehicles`, { state: { fromCompare: true } });
   };
 
   const handleClearAll = () => {
@@ -79,7 +84,7 @@ const CompareCars = () => {
     return type === "min" ? Math.min(...values) : Math.max(...values);
   };
 
-  // Empty state - no cars selected
+
   if (selectedCarIds.length === 0) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
@@ -87,7 +92,7 @@ const CompareCars = () => {
         <main className="flex-1 container mx-auto px-4 py-12">
           <Button
             variant="ghost"
-            onClick={() => navigate("/vehicles")}
+            onClick={() => navigate(`${basePath}/vehicles`)}
             className="mb-8 flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -103,7 +108,7 @@ const CompareCars = () => {
               <p className="text-muted-foreground mb-8">
                 Go back to results and tap "Add to compare" to start comparing cars.
               </p>
-              <Button onClick={() => navigate("/vehicles")} className="bg-primary hover:bg-primary/90">
+              <Button onClick={() => navigate(`${basePath}/vehicles`)} className="bg-primary hover:bg-primary/90">
                 Back to search results
               </Button>
             </div>
@@ -126,7 +131,7 @@ const CompareCars = () => {
     );
   }
 
-  // Need at least 2 cars to compare
+
   if (selectedCars.length === 1) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
@@ -134,7 +139,7 @@ const CompareCars = () => {
         <main className="flex-1 container mx-auto px-4 py-12">
           <Button
             variant="ghost"
-            onClick={() => navigate("/vehicles")}
+            onClick={() => navigate(`${basePath}/vehicles`)}
             className="mb-8 flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -147,7 +152,7 @@ const CompareCars = () => {
               <p className="text-muted-foreground mb-8">
                 Select another car from the search results to start comparing.
               </p>
-              <Button onClick={() => navigate("/vehicles")} className="bg-primary hover:bg-primary/90">
+              <Button onClick={() => navigate(`${basePath}/vehicles`)} className="bg-primary hover:bg-primary/90">
                 Back to search results
               </Button>
             </div>
@@ -165,11 +170,11 @@ const CompareCars = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1 container mx-auto px-4 py-12">
-        {/* Header Section */}
+
         <div className="mb-8">
           <Button
             variant="ghost"
-            onClick={() => navigate("/vehicles")}
+            onClick={() => navigate(`${basePath}/vehicles`)}
             className="mb-4 flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -191,7 +196,7 @@ const CompareCars = () => {
           </div>
         </div>
 
-        {/* Car Slots Header */}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {selectedCars.map((car) => (
             <div key={car.id} className="bg-card rounded-lg p-4 border-2 border-primary/20 relative">
@@ -216,17 +221,17 @@ const CompareCars = () => {
               </div>
               <h3 className="font-heading font-bold text-lg mb-1">{car.make} {car.model}</h3>
               {car.year && <p className="text-sm text-muted-foreground mb-2">{car.year}</p>}
-              <p className="text-primary font-bold text-xl mb-4">${car.price_per_day}/day</p>
+              <p className="text-primary font-bold text-xl mb-4">{car.price_per_day} DZD/day</p>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => navigate(`/vehicles/${car.id}`)}
+                  onClick={() => navigate(`${basePath}/vehicles/${car.id}`)}
                   className="flex-1 text-xs py-2"
                 >
                   View details
                 </Button>
                 <Button
-                  onClick={() => navigate(`/rent/${car.id}`)}
+                  onClick={() => navigate(`${basePath}/rent/${car.id}`)}
                   className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground text-xs py-2"
                   disabled={car.status !== 'available'}
                 >
@@ -246,10 +251,10 @@ const CompareCars = () => {
           )}
         </div>
 
-        {/* Comparison Table */}
+
         <div className="overflow-x-auto">
           <div className="min-w-[800px]">
-            {/* Basic Info Section */}
+
             <div className="bg-card rounded-lg p-6 mb-6">
               <h2 className="font-heading text-2xl font-bold mb-6">Basic Info</h2>
               <div className="space-y-4">
@@ -287,26 +292,26 @@ const CompareCars = () => {
               </div>
             </div>
 
-            {/* Price & Payments Section */}
+
             <div className="bg-card rounded-lg p-6 mb-6">
               <h2 className="font-heading text-2xl font-bold mb-6">Price & Payments</h2>
               <div className="space-y-4">
                 <ComparisonRow
                   label="Price per day"
-                  values={selectedCars.map((car) => `$${car.price_per_day}`)}
-                  highlightValue={bestPrice ? `$${bestPrice}` : undefined}
+                  values={selectedCars.map((car) => `${car.price_per_day} DZD`)}
+                  highlightValue={bestPrice ? `${bestPrice} DZD` : undefined}
                   highlightLabel="Best price"
                   numCars={selectedCars.length}
                 />
                 <ComparisonRow
                   label="Deposit required"
-                  values={selectedCars.map((car) => car.deposit_amount ? `$${car.deposit_amount}` : "N/A")}
+                  values={selectedCars.map((car) => car.deposit_amount ? `${car.deposit_amount} DZD` : "N/A")}
                   numCars={selectedCars.length}
                 />
               </div>
             </div>
 
-            {/* Capacity & Comfort Section */}
+
             <div className="bg-card rounded-lg p-6 mb-6">
               <h2 className="font-heading text-2xl font-bold mb-6">Capacity & Comfort</h2>
               <div className="space-y-4">

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Phone, Mail, MapPin } from "lucide-react";
 
 const EditProfile = () => {
-  // Mock data - in real app, this would come from API/context
+
   const user = {
     name: "John Karim",
     phone: "+537 547-6401",
@@ -20,9 +20,9 @@ const EditProfile = () => {
       
       <main className="flex-1 container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto space-y-12">
-          {/* Edit Personal Information Section */}
+
           <div className="bg-black rounded-2xl p-8 relative overflow-hidden">
-            {/* Tire track pattern background */}
+
             <div className="absolute inset-0 opacity-5">
               <div className="absolute inset-0" style={{
                 backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px)'
@@ -35,7 +35,7 @@ const EditProfile = () => {
               </h1>
               
               <div className="space-y-6">
-                {/* Name Input */}
+
                 <div>
                   <Input
                     defaultValue={user.name}
@@ -44,7 +44,7 @@ const EditProfile = () => {
                   />
                 </div>
                 
-                {/* Contact Information Display */}
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-full bg-[#D32F2F] flex items-center justify-center flex-shrink-0">
@@ -80,7 +80,7 @@ const EditProfile = () => {
             </div>
           </div>
 
-          {/* Edit Password Section */}
+
           <div className="bg-card rounded-2xl p-8 border border-border">
             <h2 className="font-heading text-3xl font-bold mb-6">Edit Password</h2>
             

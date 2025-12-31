@@ -55,7 +55,7 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
+    font-family: "Inter", sans-serif;
   }
 
   h1,
@@ -64,7 +64,7 @@ All colors MUST be HSL.
   h4,
   h5,
   h6 {
-    font-family: 'Poppins', sans-serif;
+    font-family: "Poppins", sans-serif;
   }
 }
 
@@ -121,6 +121,8 @@ All colors MUST be HSL.
   justify-content: center;
   margin-bottom: 1.5rem;
   margin-top: -1rem;
+  overflow: hidden;
+  border-radius: 1rem;
 }
 
 .car-image {

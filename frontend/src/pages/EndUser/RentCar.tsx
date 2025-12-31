@@ -7,14 +7,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { enduserCarsApi, type EndUserCar } from "@/services/enduserCarsApi";
 import { enduserReservationsApi } from "@/services/enduserReservationsApi";
-import { ArrowLeft, Car as CarIcon, Fuel, Heart, Loader2, Settings, Wind } from "lucide-react";
+import { ArrowLeft, Car as CarIcon, Fuel, Heart, Loader2, Settings, Wind, LogIn } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTenantOptional } from "@/contexts/TenantContext";
 
 const RentCar = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const tenantContext = useTenantOptional();
+  const tenantSlug = tenantContext?.tenantSlug || '';
+  const basePath = tenantSlug ? `/${tenantSlug}` : '';
+  
   const [car, setCar] = useState<EndUserCar | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDates, setSelectedDates] = useState<{ from?: Date; to?: Date }>({});
@@ -67,7 +74,7 @@ const RentCar = () => {
     fetchCar();
   }, [id, toast]);
 
-  // Fetch unavailable dates when car is loaded
+
   useEffect(() => {
     const fetchUnavailableDates = async () => {
       if (!id || !car) return;
@@ -76,13 +83,13 @@ const RentCar = () => {
       try {
         const reservations = await enduserCarsApi.getUnavailableDates(id);
         
-        // Convert reservation date ranges to individual dates
+
         const dates: Date[] = [];
         reservations.forEach((reservation) => {
           const startDate = new Date(reservation.start_date);
           const endDate = new Date(reservation.end_date);
           
-          // Add all dates in the range (inclusive)
+
           const currentDate = new Date(startDate);
           while (currentDate <= endDate) {
             dates.push(new Date(currentDate));
@@ -120,8 +127,52 @@ const RentCar = () => {
         <main className="flex-1 container mx-auto px-4 py-12 flex items-center justify-center">
           <div className="text-center">
             <h1 className="font-heading text-4xl font-bold mb-4">Car Not Found</h1>
-            <Button onClick={() => navigate("/vehicles")} className="bg-primary hover:bg-primary/90">
+            <Button onClick={() => navigate(`${basePath}/vehicles`)} className="bg-primary hover:bg-primary/90">
               Back to Vehicles
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1 container mx-auto px-4 py-12 flex items-center justify-center">
+          <div className="max-w-md w-full text-center">
+            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <LogIn className="w-10 h-10 text-primary" />
+            </div>
+            <h1 className="font-heading text-3xl font-bold mb-4">Login Required</h1>
+            <p className="text-muted-foreground mb-8">
+              You need to be logged in to rent a car. Please sign in or create an account to continue.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button
+                onClick={() => navigate('/signin', { state: { returnTo: `${basePath}/rent/${id}` } })}
+                className="bg-primary hover:bg-primary/90 text-white px-8"
+              >
+                <LogIn className="w-4 h-4 mr-2" />
+                Sign In
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/signup', { state: { returnTo: `${basePath}/rent/${id}` } })}
+              >
+                Create Account
+              </Button>
+            </div>
+            <Button
+              variant="ghost"
+              onClick={() => navigate(`${basePath}/vehicles/${id}`)}
+              className="mt-6"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Car Details
             </Button>
           </div>
         </main>
@@ -144,7 +195,7 @@ const RentCar = () => {
   }).flat();
 
   const handleContinue = async () => {
-    // Prevent multiple clicks
+
     if (isCreatingReservation) return;
 
     if (!selectedDates.from || !selectedDates.to) {
@@ -165,7 +216,7 @@ const RentCar = () => {
       return;
     }
 
-    // Double-check availability before creating
+
     const pickupDate = new Date(selectedDates.from);
     const [pickupHour, pickupMinute] = pickupTime.split(":").map(Number);
     pickupDate.setHours(pickupHour, pickupMinute, 0, 0);
@@ -174,7 +225,7 @@ const RentCar = () => {
     const [returnHour, returnMinute] = returnTime.split(":").map(Number);
     returnDate.setHours(returnHour, returnMinute, 0, 0);
 
-    // Check if selected dates overlap with unavailable dates
+
     const selectedDateRange: Date[] = [];
     const currentDate = new Date(pickupDate);
     while (currentDate <= returnDate) {
@@ -206,7 +257,7 @@ const RentCar = () => {
     try {
       const totalPrice = calculateTotalPrice();
 
-      // Create reservation directly (skipping payment)
+
       console.log('Creating reservation with data:', {
         carId: car.id,
         startDate: pickupDate.toISOString(),
@@ -230,7 +281,7 @@ const RentCar = () => {
         });
 
         // Navigate to confirmation page
-        navigate("/enduser/confirmation", {
+        navigate(`${basePath}/confirmation`, {
           state: {
             reservationId: reservation.id || reservation.confirmation_code || `RES-${Date.now()}`,
             reservation: reservation,
@@ -263,7 +314,7 @@ const RentCar = () => {
       <main className="flex-1 container mx-auto px-4 py-12">
         <Button
           variant="ghost"
-          onClick={() => navigate(`/vehicles/${car.id}`)}
+          onClick={() => navigate(`${basePath}/vehicles/${car.id}`)}
           className="mb-8 flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -271,7 +322,7 @@ const RentCar = () => {
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Left Column - Car Details */}
+
           <div>
             <h1 className="font-heading text-3xl font-bold mb-6">Rent this car</h1>
             
@@ -308,7 +359,7 @@ const RentCar = () => {
                     <p className="text-muted-foreground text-sm">{car.model} {car.year ? `(${car.year})` : ""}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-primary font-bold text-xl">${car.price_per_day}</p>
+                    <p className="text-primary font-bold text-xl">{car.price_per_day} DZD</p>
                     <p className="text-muted-foreground text-xs">per day</p>
                   </div>
                 </div>
@@ -331,7 +382,7 @@ const RentCar = () => {
                 </div>
                 
                 <Button
-                  onClick={() => navigate(`/vehicles/${car.id}`)}
+                  onClick={() => navigate(`${basePath}/vehicles/${car.id}`)}
                   className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold rounded-lg h-11"
                 >
                   View Details
@@ -340,11 +391,11 @@ const RentCar = () => {
             </div>
           </div>
 
-          {/* Right Column - Rental Duration Selection */}
+
           <div>
             <h2 className="font-heading text-2xl font-bold mb-6">Select rental duration :</h2>
             
-            {/* Calendar */}
+
             <div className="bg-card rounded-lg p-6 mb-6 border border-border">
               {isLoadingUnavailableDates ? (
                 <div className="flex items-center justify-center py-8">
@@ -385,7 +436,7 @@ const RentCar = () => {
               )}
             </div>
 
-            {/* Time Selection */}
+
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="block text-sm font-semibold mb-2">Pick up time:</label>
@@ -420,14 +471,14 @@ const RentCar = () => {
               </div>
             </div>
 
-            {/* Total Price */}
+
             <div className="bg-card rounded-lg p-6 mb-6 border border-border">
               <h3 className="font-heading text-xl font-bold mb-4">Total Price</h3>
               <p className="text-muted-foreground mb-4">
                 Your total price for this rental is :
               </p>
               <div className="bg-muted rounded-lg p-4 mb-4">
-                <p className="text-3xl font-bold text-primary">${totalPrice || car.price_per_day}</p>
+                <p className="text-3xl font-bold text-primary">{totalPrice || car.price_per_day} DZD</p>
               </div>
               <Button
                 onClick={handleContinue}

@@ -7,11 +7,16 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, Car as CarIcon, Heart, Settings, Fuel, Wind } from "lucide-react";
 import { type EndUserCar } from "@/services/enduserCarsApi";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTenantOptional } from "@/contexts/TenantContext";
 
 const ConfirmationCode = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const tenantContext = useTenantOptional();
+  const tenantSlug = tenantContext?.tenantSlug || '';
+  const basePath = tenantSlug ? `/${tenantSlug}` : '';
+  
   const bookingData = location.state as {
     reservationId: string;
     reservation?: any;
@@ -27,7 +32,7 @@ const ConfirmationCode = () => {
   } | null;
 
   const [code, setCode] = useState("");
-  // Get phone number from user profile if available
+
   const phoneNumber = user?.phone_number || "+1 234 567 8900";
 
   if (!bookingData || !bookingData.car) {
@@ -37,7 +42,7 @@ const ConfirmationCode = () => {
         <main className="flex-1 container mx-auto px-4 py-12 flex items-center justify-center">
           <div className="text-center">
             <h1 className="font-heading text-4xl font-bold mb-4">Booking Data Not Found</h1>
-            <Button onClick={() => navigate("/vehicles")} className="bg-primary hover:bg-primary/90">
+            <Button onClick={() => navigate(`${basePath}/vehicles`)} className="bg-primary hover:bg-primary/90">
               Back to Vehicles
             </Button>
           </div>
@@ -57,14 +62,14 @@ const ConfirmationCode = () => {
   };
 
   const handleResendCode = () => {
-    // In a real app, this would resend the code via SMS/email
+
     alert("Confirmation code resent! Please check your phone.");
   };
 
   const handleContinue = () => {
     if (code.length === 4) {
-      // Navigate to confirmation page with all booking data
-      navigate("/rent/confirmation", {
+
+      navigate(`${basePath}/confirmation`, {
         state: bookingData,
       });
     }
@@ -76,7 +81,7 @@ const ConfirmationCode = () => {
       <main className="flex-1 container mx-auto px-4 py-12">
         <Button
           variant="ghost"
-          onClick={() => navigate("/rent/payment", { state: bookingData })}
+          onClick={() => navigate(`${basePath}/payment`, { state: bookingData })}
           className="mb-8 flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -84,7 +89,7 @@ const ConfirmationCode = () => {
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Left Column - Car Details */}
+
           <div>
             <div className="bg-card rounded-2xl overflow-hidden shadow-lg relative">
               <button className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 hover:bg-white flex items-center justify-center transition-colors shadow-md">
@@ -114,7 +119,7 @@ const ConfirmationCode = () => {
                     <p className="text-muted-foreground text-sm">{car.model} {car.year ? `(${car.year})` : ""}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-primary font-bold text-xl">${car.price_per_day}</p>
+                    <p className="text-primary font-bold text-xl">{car.price_per_day} DZD</p>
                     <p className="text-muted-foreground text-xs">per day</p>
                   </div>
                 </div>
@@ -137,7 +142,7 @@ const ConfirmationCode = () => {
                 </div>
                 
                 <Button
-                  onClick={() => navigate(`/vehicles/${car.id}`)}
+                  onClick={() => navigate(`${basePath}/vehicles/${car.id}`)}
                   className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold rounded-lg h-11"
                 >
                   View Details
@@ -146,7 +151,7 @@ const ConfirmationCode = () => {
             </div>
           </div>
 
-          {/* Right Column - Confirmation Code */}
+
           <div>
             <h2 className="font-heading text-2xl font-bold mb-4">
               A confirmation code was sent to your phone:
@@ -176,7 +181,7 @@ const ConfirmationCode = () => {
             <div className="flex gap-4">
               <Button
                 variant="outline"
-                onClick={() => navigate("/rent/payment", { state: bookingData })}
+                onClick={() => navigate(`${basePath}/payment`, { state: bookingData })}
                 className="flex-1"
               >
                 Back

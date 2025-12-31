@@ -49,7 +49,7 @@ export default function ClientRentalPolicy() {
       <Header />
 
       <main className="flex-1">
-        {/* Hero Section */}
+
         <HeroBackground trace={traceCar} car={heroCar}>
           <div>
             <button
@@ -83,7 +83,7 @@ export default function ClientRentalPolicy() {
           </div>
         </HeroBackground>
 
-        {/* Policy Content */}
+
         <div className="py-12 bg-background">
           <div className="container mx-auto px-4 max-w-4xl">
             <Card className="bg-gray-100 p-6 rounded-xl mb-8 border border-border">
@@ -139,7 +139,7 @@ export default function ClientRentalPolicy() {
               ))}
             </div>
 
-            {/* Action Buttons */}
+
             <div className="flex gap-4 justify-end mt-12">
               {isEditing && (
                 <>

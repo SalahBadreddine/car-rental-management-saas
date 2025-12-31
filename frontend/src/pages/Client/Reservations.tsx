@@ -13,16 +13,16 @@ import { useAuth } from "@/contexts/AuthContext"
 
 type ReservationStatus = "all" | "pending" | "confirmed" | "completed" | "cancelled"
 
-// Format currency helper
+
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'DZD',
     minimumFractionDigits: 2,
   }).format(amount)
 }
 
-// Format date helper
+
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('en-US', {
     month: 'short',
@@ -31,7 +31,7 @@ const formatDate = (dateString: string) => {
   })
 }
 
-// Calculate days between dates
+
 const calculateDays = (startDate: string, endDate: string) => {
   const start = new Date(startDate)
   const end = new Date(endDate)
@@ -40,7 +40,7 @@ const calculateDays = (startDate: string, endDate: string) => {
   return diffDays
 }
 
-// Get status badge color
+
 const getStatusBadge = (status: string) => {
   switch (status) {
     case 'pending':
@@ -67,7 +67,7 @@ export default function ClientReservations() {
   const { toast } = useToast()
   const { selectedLocation } = useAuth()
 
-  // Fetch reservations when location changes
+
   useEffect(() => {
     const fetchReservations = async () => {
       setIsLoading(true)
@@ -89,7 +89,7 @@ export default function ClientReservations() {
     fetchReservations()
   }, [selectedLocation])
 
-  // Filter reservations by status and search
+
   const filteredReservations = useMemo(() => {
     const filtered = reservations.filter((reservation) => {
       // Status filter
@@ -97,7 +97,7 @@ export default function ClientReservations() {
         return false
       }
 
-      // Search filter
+
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
         const carName = reservation.car 
@@ -117,7 +117,7 @@ export default function ClientReservations() {
     return filtered
   }, [reservations, filter, searchQuery])
 
-  // Paginate filtered reservations
+
   const paginatedReservations = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
     const endIndex = startIndex + itemsPerPage
@@ -126,12 +126,12 @@ export default function ClientReservations() {
 
   const totalPages = Math.ceil(filteredReservations.length / itemsPerPage)
 
-  // Reset to page 1 when filters change
+
   useEffect(() => {
     setCurrentPage(1)
   }, [filter, searchQuery, selectedLocation])
 
-  // Group by status from paginated results
+
   const pendingReservations = paginatedReservations.filter(r => r.status === 'pending')
   const confirmedReservations = paginatedReservations.filter(r => r.status === 'confirmed')
   const completedReservations = paginatedReservations.filter(r => r.status === 'completed')
@@ -162,7 +162,7 @@ export default function ClientReservations() {
     }
   }
 
-  // Render reservation card
+
   const renderReservationCard = (reservation: Reservation) => (
     <div 
       key={reservation.id} 
@@ -210,7 +210,7 @@ export default function ClientReservations() {
     </div>
   )
 
-  // Render section
+
   const renderSection = (title: string, items: Reservation[], statusFilter: ReservationStatus) => {
     if ((filter !== "all" && filter !== statusFilter) || items.length === 0) {
       return null
@@ -239,7 +239,7 @@ export default function ClientReservations() {
           Manage all your rental reservations
         </p>
 
-        {/* Search Bar */}
+
         <div className="relative max-w-2xl mx-auto mb-6">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
           <Input
@@ -251,7 +251,7 @@ export default function ClientReservations() {
           />
         </div>
 
-        {/* Filter Buttons */}
+
         <div className="flex flex-wrap justify-center gap-3 mb-12">
           {(['all', 'pending', 'confirmed', 'completed', 'cancelled'] as ReservationStatus[]).map((status) => (
             <Button
@@ -268,14 +268,14 @@ export default function ClientReservations() {
           ))}
         </div>
 
-        {/* Loading State */}
+
         {isLoading && (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-12 h-12 animate-spin text-[#DC2626]" />
           </div>
         )}
 
-        {/* Empty State */}
+
         {!isLoading && filteredReservations.length === 0 && (
           <div className="text-center py-20">
             <Calendar className="w-20 h-20 text-muted-foreground/30 mx-auto mb-4" />
@@ -288,7 +288,7 @@ export default function ClientReservations() {
           </div>
         )}
 
-        {/* Reservations by Status */}
+
         {!isLoading && filteredReservations.length > 0 && (
           <>
             {renderSection("Pending", pendingReservations, "pending")}
@@ -296,7 +296,7 @@ export default function ClientReservations() {
             {renderSection("Completed", completedReservations, "completed")}
             {renderSection("Cancelled", cancelledReservations, "cancelled")}
             
-            {/* Pagination Controls */}
+
             {totalPages > 1 && (
               <div className="flex items-center justify-center gap-2 mt-8">
                 <Button
@@ -330,7 +330,7 @@ export default function ClientReservations() {
           </>
         )}
 
-        {/* Summary Stats */}
+
         {!isLoading && reservations.length > 0 && (
           <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-card border rounded-lg p-4 text-center">

@@ -24,7 +24,7 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
 
   // Redirect to role selection if not logged in
   if (!user || !userRole) {
-    return <Navigate to="/role-select" replace />
+    return <Navigate to="/browse" replace />
   }
 
   // Check role if required

@@ -3,6 +3,7 @@
 import { Link } from "react-router-dom"
 import { MapPin, Mail, Phone, Facebook, Instagram, X, Youtube } from "lucide-react"
 import logo from "@/assets/logo.png"
+import TenantContentEditor from "@/components/TenantContentEditor"
 
 const Footer = () => {
   const ICON_CONTAINER_CLASS = "w-10 h-10 rounded-full bg-[#D32F2F] flex items-center justify-center flex-shrink-0"
@@ -14,7 +15,9 @@ const Footer = () => {
           {/* Logo / Brand Name */}
           <div className="flex items-center gap-2">
             <img src={logo || "/placeholder.svg"} alt="RentoGo Logo" className="w-10 h-10 object-contain" />
-            <span className="font-heading font-bold text-xl text-foreground">RentoGo</span>
+            <span className="font-heading font-bold text-xl text-foreground">
+              <TenantContentEditor sectionKey="footer_brand_name" defaultContent="RentoGo" />
+            </span>
           </div>
 
           {/* Address */}
@@ -24,7 +27,9 @@ const Footer = () => {
             </div>
             <div>
               <p className="font-semibold text-base text-muted-foreground">Address</p>
-              <p className="text-base font-semibold text-foreground">Oxford Ave. Cary, NC 27511</p>
+              <p className="text-base font-semibold text-foreground">
+                <TenantContentEditor sectionKey="footer_address" defaultContent="Oxford Ave. Cary, NC 27511" />
+              </p>
             </div>
           </div>
 
@@ -35,7 +40,9 @@ const Footer = () => {
             </div>
             <div>
               <p className="font-semibold text-base text-muted-foreground">Email</p>
-              <p className="text-base font-semibold text-foreground">nwiger@yahoo.com</p>
+              <p className="text-base font-semibold text-foreground">
+                <TenantContentEditor sectionKey="footer_email" defaultContent="contact@rentogo.com" />
+              </p>
             </div>
           </div>
 
@@ -46,7 +53,9 @@ const Footer = () => {
             </div>
             <div>
               <p className="font-semibold text-base text-muted-foreground">Phone</p>
-              <p className="text-base font-semibold text-foreground">+537 547-6401</p>
+              <p className="text-base font-semibold text-foreground">
+                <TenantContentEditor sectionKey="footer_phone" defaultContent="+1 555-123-4567" />
+              </p>
             </div>
           </div>
         </div>

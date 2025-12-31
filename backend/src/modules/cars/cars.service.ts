@@ -240,6 +240,7 @@ export class CarsService {
     if (dto.primaryImageUrl !== undefined) updatePayload.primary_image_url = dto.primaryImageUrl;
     if (dto.galleryUrls !== undefined) updatePayload.gallery_urls = dto.galleryUrls;
     if (dto.status !== undefined) updatePayload.status = dto.status;
+    if (dto.isFeatured !== undefined) updatePayload.is_featured = dto.isFeatured;
 
     const { data, error } = await this.supabaseClient
       .from('cars')

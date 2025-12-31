@@ -1,13 +1,14 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 
-const CarCard = ({ image, name, price, carId = 1 }: { image: string; name: string; price: string; carId?: number }) => {
+const CarCard = ({ image, name, price, carId }: { image: string; name: string; price: string; carId?: string | number }) => {
   const navigate = useNavigate()
+  const { tenantSlug } = useParams()
 
   const handleBookNow = () => {
-    navigate(`/client/vehicles/${carId}`)
+    navigate(`/${tenantSlug || 'client'}/vehicles/${carId}`)
   }
 
   return (
@@ -15,13 +16,13 @@ const CarCard = ({ image, name, price, carId = 1 }: { image: string; name: strin
       <div className="car-card">
         <div className="car-card-content">
           <div className="car-image-container -translate-y-12">
-            <img src={image || "/placeholder.svg"} alt={name} className="car-image" />
+            <img src={image || "/placeholder.svg"} alt={name} className="car-image rounded-xl" />
           </div>
 
           <h3 className="car-name">{name}</h3>
 
           <div className="car-price">
-            <span className="price-text">From ${price}</span>
+            <span className="price-text">From {price} DZD</span>
           </div>
 
           <div className="car-button-container">

@@ -13,16 +13,16 @@ import { dashboardApi } from "@/services/dashboardApi"
 import { carsApi, type Car } from "@/services/carsApi"
 import { reservationsApi, type Reservation } from "@/services/reservationsApi"
 
-// Helper to format currency
+
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'DZD',
     minimumFractionDigits: 2,
   }).format(amount)
 }
 
-// Helper to get status badge color
+
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'pending':
@@ -42,14 +42,14 @@ const getStatusColor = (status: string) => {
   }
 }
 
-// Color palette for pie chart
+
 const COLORS = ['#DC2626', '#2563EB', '#16A34A', '#F59E0B', '#8B5CF6', '#EC4899']
 
 export default function ClientDashboard() {
   const navigate = useNavigate()
   const { user, selectedLocation } = useAuth()
   
-  // State for API data
+
   const [isLoading, setIsLoading] = useState(true)
   const [carStats, setCarStats] = useState<any>(null)
   const [reservationStats, setReservationStats] = useState<any>(null)
@@ -58,7 +58,7 @@ export default function ClientDashboard() {
   const [categoryData, setCategoryData] = useState<{name: string, value: number, color: string}[]>([])
   const [statusData, setStatusData] = useState<{name: string, count: number}[]>([])
 
-  // Fetch dashboard data when location changes
+
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true)
@@ -75,7 +75,7 @@ export default function ClientDashboard() {
         setRecentReservations(reservationsRes.slice(0, 6))
         setFeaturedCars(carsRes.slice(0, 4))
 
-        // Transform category data for pie chart
+
         if (carStatsRes?.by_category) {
           const categories = Object.entries(carStatsRes.by_category).map(([name, value], index) => ({
             name,
@@ -85,7 +85,7 @@ export default function ClientDashboard() {
           setCategoryData(categories)
         }
 
-        // Transform status data for chart
+
         if (carStatsRes?.by_status) {
           const statuses = Object.entries(carStatsRes.by_status).map(([name, count]) => ({
             name,
@@ -111,7 +111,7 @@ export default function ClientDashboard() {
     navigate(`/client/vehicles/${vehicleId}`)
   }
 
-  // Calculate days between dates
+
   const calculateDays = (startDate: string, endDate: string) => {
     const start = new Date(startDate)
     const end = new Date(endDate)
@@ -140,7 +140,7 @@ export default function ClientDashboard() {
       <Header />
 
       <main className="flex-1 container mx-auto px-4 py-8">
-        {/* Personal Information Card */}
+
         <Card className="bg-black text-white p-8 mb-8 rounded-2xl relative overflow-hidden">
           <div
             className="absolute right-0 top-0 bottom-0 w-2/3 opacity-20"
@@ -171,92 +171,16 @@ export default function ClientDashboard() {
           </div>
         </Card>
 
-        {/* Dashboard Overview */}
+
         <h2 className="text-4xl font-bold text-center mb-8">Dashboard Overview</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Total Cars */}
-          <Card className="p-6 border rounded-xl bg-white">
-            <div className="flex items-start gap-3 mb-2">
-              <div className="p-2 bg-gray-100 rounded-lg">
-                <CarIcon className="w-6 h-6" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Total Cars</p>
-                <p className="text-2xl font-bold mt-1">{carStats?.total_cars || 0}</p>
-              </div>
-            </div>
-          </Card>
 
-          {/* Available Cars */}
-          <Card className="p-6 border rounded-xl bg-white">
-            <div className="flex items-start gap-3 mb-2">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CarIcon className="w-6 h-6 text-green-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Available Cars</p>
-                <p className="text-2xl font-bold mt-1">{carStats?.by_status?.available || 0}</p>
-              </div>
-            </div>
-          </Card>
-
-          {/* Rented Cars */}
-          <Card className="p-6 border rounded-xl bg-white">
-            <div className="flex items-start gap-3 mb-2">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <CarIcon className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Rented Cars</p>
-                <p className="text-2xl font-bold mt-1">{carStats?.by_status?.rented || 0}</p>
-              </div>
-            </div>
-          </Card>
-
-          {/* Total Reservations */}
-          <Card className="p-6 border rounded-xl bg-white">
-            <div className="flex items-start gap-3 mb-2">
-              <div className="p-2 bg-gray-100 rounded-lg">
-                <FileText className="w-6 h-6" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Total Reservations</p>
-                <p className="text-2xl font-bold mt-1">{reservationStats?.total || recentReservations.length || 0}</p>
-              </div>
-            </div>
-          </Card>
-
-          {/* Pending Reservations */}
-          <Card className="p-6 border rounded-xl bg-white">
-            <div className="flex items-start gap-3 mb-2">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Settings className="w-6 h-6 text-yellow-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Pending Reservations</p>
-                <p className="text-2xl font-bold mt-1">{reservationStats?.by_status?.pending || 0}</p>
-              </div>
-            </div>
-          </Card>
-
-          {/* Maintenance */}
-          <Card className="p-6 border rounded-xl bg-white">
-            <div className="flex items-start gap-3 mb-2">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <Wrench className="w-6 h-6 text-red-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">In Maintenance</p>
-                <p className="text-2xl font-bold mt-1">{carStats?.by_status?.maintenance || 0}</p>
-              </div>
-            </div>
-          </Card>
         </div>
 
-        {/* Charts Row */}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Cars by Status */}
+
           <Card className="p-6 border rounded-xl bg-white">
             <h3 className="font-bold mb-4">Cars by Status</h3>
             <ResponsiveContainer width="100%" height={250}>
@@ -270,7 +194,7 @@ export default function ClientDashboard() {
             </ResponsiveContainer>
           </Card>
 
-          {/* Cars by Category (Pie) */}
+
           <Card className="p-6 border rounded-xl bg-white">
             <h3 className="font-bold mb-4">Cars by Category</h3>
             {categoryData.length > 0 ? (
@@ -310,7 +234,7 @@ export default function ClientDashboard() {
           </Card>
         </div>
 
-        {/* Recent Bookings */}
+
         <h3 className="text-3xl font-bold text-center mb-6">Recent Bookings</h3>
         <div className="space-y-2 mb-8">
           {recentReservations.length > 0 ? (
@@ -352,7 +276,7 @@ export default function ClientDashboard() {
           )}
         </div>
 
-        {/* Most Rented / Featured Cars */}
+
         <h3 className="text-3xl font-bold text-center mb-6">Featured Cars</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           {featuredCars.length > 0 ? (

@@ -1,4 +1,4 @@
-import { IsString, IsInt, IsNumber, IsOptional, IsArray, Min } from 'class-validator';
+import { IsString, IsInt, IsNumber, IsOptional, IsArray, Min, IsBoolean } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
 export class UpdateCarDto {
@@ -81,4 +81,9 @@ export class UpdateCarDto {
   @IsOptional()
   @IsString()
   status?: 'available' | 'rented' | 'maintenance';
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  isFeatured?: boolean;
 }

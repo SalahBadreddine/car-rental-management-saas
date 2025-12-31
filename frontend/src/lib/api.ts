@@ -114,3 +114,22 @@ export async function refreshToken() {
   return data;
 }
 
+/**
+ * Make a public API request (no auth required, no 401 handling)
+ * Use this for public endpoints like /cars, /tenants/public, etc.
+ */
+export async function publicApiRequest(
+  endpoint: string,
+  method: string = "GET",
+  body?: Object
+) {
+  const res = await fetch(BASE_URL + endpoint, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  const data = await res.json().catch(() => null);
+  return { status: res.status, data };
+}
+

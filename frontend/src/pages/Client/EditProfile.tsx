@@ -24,7 +24,7 @@ export default function ClientEditProfile() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission
+
     navigate("/client/dashboard")
   }
 
@@ -47,7 +47,7 @@ export default function ClientEditProfile() {
             <h1 className="text-4xl font-bold mb-12">Edit Personal Information :</h1>
 
             <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Personal Information */}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <div className="bg-white/10 rounded-lg p-4 flex items-center gap-4">
@@ -112,7 +112,7 @@ export default function ClientEditProfile() {
                 </div>
               </div>
 
-              {/* Edit Password */}
+
               <div className="pt-8">
                 <h2 className="text-3xl font-bold mb-6">Edit Password</h2>
                 <div className="space-y-4 max-w-md">
@@ -139,7 +139,7 @@ export default function ClientEditProfile() {
                 </div>
               </div>
 
-              {/* Submit Button */}
+
               <div className="flex justify-end pt-6">
                 <Button type="submit" className="bg-[#DC2626] hover:bg-[#B71C1C] text-white px-12 py-6 text-lg h-auto">
                   Confirm changes

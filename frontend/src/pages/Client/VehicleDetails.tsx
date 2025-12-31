@@ -12,16 +12,16 @@ import { carsApi, type Car } from "@/services/carsApi"
 import { reservationsApi, type Reservation } from "@/services/reservationsApi"
 import { useToast } from "@/hooks/use-toast"
 
-// Format currency helper
+
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'DZD',
     minimumFractionDigits: 2,
   }).format(amount)
 }
 
-// Format date helper
+
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('en-US', {
     month: 'short',
@@ -39,7 +39,7 @@ export default function ClientVehicleDetails() {
   const [vehicle, setVehicle] = useState<Car | null>(null)
   const [reservations, setReservations] = useState<Reservation[]>([])
 
-  // Fetch vehicle data
+
   useEffect(() => {
     const fetchData = async () => {
       if (!id) return
@@ -68,7 +68,7 @@ export default function ClientVehicleDetails() {
     fetchData()
   }, [id])
 
-  // Handle delete
+
   const handleDelete = async () => {
     if (!id || !confirm('Are you sure you want to delete this vehicle?')) return
 
@@ -90,7 +90,7 @@ export default function ClientVehicleDetails() {
     }
   }
 
-  // Get status badge color
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'available':
@@ -142,9 +142,9 @@ export default function ClientVehicleDetails() {
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column */}
+
           <div className="lg:col-span-1 space-y-6">
-            {/* Car Card */}
+
             <Card className="p-6 border rounded-xl relative">
               <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium ${getStatusBadge(vehicle.status)}`}>
                 {vehicle.status}
@@ -173,7 +173,7 @@ export default function ClientVehicleDetails() {
                 </div>
               </div>
 
-              {/* Image Gallery */}
+
               {vehicle.gallery_urls && Array.isArray(vehicle.gallery_urls) && vehicle.gallery_urls.length > 0 && (
                 <div className="grid grid-cols-4 gap-2 mb-6">
                   {vehicle.gallery_urls.slice(0, 4).map((url, index) => (
@@ -184,7 +184,7 @@ export default function ClientVehicleDetails() {
                 </div>
               )}
 
-              {/* Availability Calendar */}
+
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-2">
                   <h4 className="font-semibold">Availability</h4>
@@ -192,7 +192,7 @@ export default function ClientVehicleDetails() {
                 <Calendar mode="single" selected={date} onSelect={setDate} className="rounded-md border w-full" />
               </div>
 
-              {/* Rental Count */}
+
               <div className="mb-6">
                 <p className="text-sm font-medium mb-2">Total Rentals</p>
                 <p className="text-2xl font-bold">{vehicle.rental_count || 0} times</p>
@@ -200,9 +200,9 @@ export default function ClientVehicleDetails() {
             </Card>
           </div>
 
-          {/* Right Column */}
+
           <div className="lg:col-span-2 space-y-6">
-            {/* Technical Specification */}
+
             <Card className="p-6 border rounded-xl">
               <h3 className="font-bold text-xl mb-6">Technical Specification</h3>
               <div className="grid grid-cols-3 gap-6">
@@ -230,7 +230,7 @@ export default function ClientVehicleDetails() {
               </div>
             </Card>
 
-            {/* Car Equipment/Features */}
+
             {features.length > 0 && (
               <Card className="p-6 border rounded-xl">
                 <h3 className="font-bold text-xl mb-4">Car Features</h3>
@@ -247,7 +247,7 @@ export default function ClientVehicleDetails() {
               </Card>
             )}
 
-            {/* Color & Details */}
+
             <Card className="p-6 border rounded-xl">
               <h3 className="font-bold text-xl mb-4">Details</h3>
               <div className="grid grid-cols-2 gap-4">
@@ -270,7 +270,7 @@ export default function ClientVehicleDetails() {
               </div>
             </Card>
 
-            {/* Current Bookings */}
+
             <Card className="p-6 border rounded-xl">
               <h3 className="font-bold text-xl mb-4">Recent Reservations ({reservations.length})</h3>
               {reservations.length > 0 ? (
@@ -288,9 +288,9 @@ export default function ClientVehicleDetails() {
                       <div className="flex items-center gap-4">
                         <span className="font-medium">{formatCurrency(reservation.total_price)}</span>
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          reservation.status === 'active' ? 'bg-[#DC2626] text-white' :
-                          reservation.status === 'completed' ? 'bg-green-100 text-green-700' :
+                          reservation.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                           reservation.status === 'confirmed' ? 'bg-blue-100 text-blue-700' :
+                          reservation.status === 'completed' ? 'bg-green-100 text-green-700' :
                           'bg-gray-100 text-gray-700'
                         }`}>
                           {reservation.status}
@@ -311,7 +311,7 @@ export default function ClientVehicleDetails() {
               )}
             </Card>
 
-            {/* Action Buttons */}
+
             <div className="flex gap-4">
               <Button
                 onClick={() => navigate(`/client/vehicles/${id}/edit`)}

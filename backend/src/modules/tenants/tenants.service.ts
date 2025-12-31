@@ -77,7 +77,7 @@ export class TenantsService {
   async findAll(): Promise<TenantResponseDto[]> {
     const { data, error } = await this.supabaseClient
       .from('tenants')
-      .select('id, name, slug, logo_url, contact_email, phone_number');
+      .select('id, name, slug, logo_url, contact_email, phone_number, website_config');
 
     if (error) {
       throw new InternalServerErrorException(`Failed to fetch tenants: ${error.message}`);
@@ -94,7 +94,7 @@ export class TenantsService {
     // Public access: Only select public fields (exclude subscription_status)
     const { data, error } = await this.supabaseClient
       .from('tenants')
-      .select('id, name, slug, logo_url, contact_email, phone_number')
+      .select('id, name, slug, logo_url, contact_email, phone_number, website_config')
       .eq('slug', slug)
       .single();
 
@@ -162,6 +162,9 @@ export class TenantsService {
     if (dto.logoUrl !== undefined) {
       updatePayload.logo_url = dto.logoUrl;
     }
+    if (dto.websiteConfig !== undefined) {
+      updatePayload.website_config = dto.websiteConfig;
+    }
 
     // If no fields to update, return current record
     if (Object.keys(updatePayload).length === 0) {
@@ -190,5 +193,70 @@ export class TenantsService {
     }
 
     return data;
+  }
+  async getPlatformStats() {
+    // Count stats
+    const [
+      { count: totalTenants },
+      { count: totalCars },
+      { count: totalReservations },
+      { count: totalUsers }
+    ] = await Promise.all([
+      this.supabaseClient.from('tenants').select('*', { count: 'exact', head: true }),
+      this.supabaseClient.from('cars').select('*', { count: 'exact', head: true }),
+      this.supabaseClient.from('reservations').select('*', { count: 'exact', head: true }),
+      this.supabaseClient.from('profiles').select('*', { count: 'exact', head: true }),
+    ]);
+
+    // Revenue stats (last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    
+    // We only select necessary fields to minimize data transfer
+    const { data: payments, error: paymentsError } = await this.supabaseClient
+      .from('payments')
+      .select('amount_paid, created_at')
+      .gte('created_at', sixMonthsAgo.toISOString())
+      .order('created_at', { ascending: true });
+
+    if (paymentsError) {
+      console.error('Error fetching payments for stats:', paymentsError);
+    }
+
+    // Process payments for chart data
+    const monthlyRevenue = [];
+    const monthMap = new Map();
+
+    // Initialize last 6 months
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const key = `${d.getFullYear()}-${d.getMonth()}`; // unique key
+      const label = d.toLocaleString('default', { month: 'short' });
+      monthMap.set(key, { name: label, total: 0 });
+    }
+
+    // Aggregate data
+    if (payments) {
+      payments.forEach(p => {
+        const d = new Date(p.created_at);
+        const key = `${d.getFullYear()}-${d.getMonth()}`;
+        if (monthMap.has(key)) {
+          const entry = monthMap.get(key);
+          entry.total += Number(p.amount_paid);
+        }
+      });
+    }
+
+    // Convert to array
+    const chartData = Array.from(monthMap.values());
+
+    return {
+      totalTenants: totalTenants || 0,
+      totalCars: totalCars || 0,
+      totalReservations: totalReservations || 0,
+      totalUsers: totalUsers || 0,
+      monthlyRevenue: chartData
+    };
   }
 }

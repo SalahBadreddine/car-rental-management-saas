@@ -62,7 +62,7 @@ export default function ClientFAQ() {
       <Header />
 
       <main className="flex-1">
-        {/* Hero Section */}
+
         <HeroBackground trace={traceCar} car={heroCar}>
           <div>
             <button
@@ -98,10 +98,10 @@ export default function ClientFAQ() {
           </div>
         </HeroBackground>
 
-        {/* FAQ Content */}
+
         <div className="py-12 bg-background">
           <div className="container mx-auto px-4 max-w-4xl">
-            {/* Add New FAQ Button */}
+
             {isEditing && (
               <Button
                 onClick={() => setIsAddingNew(!isAddingNew)}
@@ -112,7 +112,7 @@ export default function ClientFAQ() {
               </Button>
             )}
 
-            {/* Add New FAQ Form */}
+
             {isAddingNew && (
               <Card className="bg-white p-6 rounded-xl mb-8 border-2 border-[#D32F2F]">
                 <h3 className="text-xl font-bold mb-4">Add New FAQ Item</h3>
@@ -170,7 +170,7 @@ export default function ClientFAQ() {
               </Card>
             )}
 
-            {/* FAQ Sections */}
+
             <div className="space-y-12">
               {categories.map((category) => (
                 <section key={category}>

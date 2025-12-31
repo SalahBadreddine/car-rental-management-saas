@@ -57,14 +57,14 @@ export const locationsApi = {
     try {
       const formData = new FormData();
       
-      // Add text fields
+
       Object.entries(data).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           formData.append(key, String(value));
         }
       });
       
-      // Add image file
+
       if (imageFile) {
         formData.append('file', imageFile);
       }

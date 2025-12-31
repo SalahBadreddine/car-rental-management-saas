@@ -184,4 +184,51 @@ export class EmailService {
       html,
     });
   }
+
+  /**
+   * Send contact form message to tenant
+   */
+  async sendContactEmail(
+    tenantEmail: string,
+    tenantName: string,
+    senderName: string,
+    senderEmail: string,
+    subject: string,
+    message: string,
+  ): Promise<boolean> {
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #dc2626;">📬 New Contact Message</h2>
+        <p>You have received a new message from your website contact form.</p>
+        
+        <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">Contact Details</h3>
+          <p><strong>From:</strong> ${senderName}</p>
+          <p><strong>Email:</strong> <a href="mailto:${senderEmail}">${senderEmail}</a></p>
+          <p><strong>Subject:</strong> ${subject}</p>
+        </div>
+        
+        <div style="background: #ffffff; border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">Message</h3>
+          <p style="white-space: pre-wrap;">${message}</p>
+        </div>
+        
+        <p style="color: #6b7280; font-size: 14px;">
+          <strong>Reply to this inquiry:</strong> Simply reply to this email or click 
+          <a href="mailto:${senderEmail}?subject=Re: ${encodeURIComponent(subject)}">here</a>.
+        </p>
+        
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+        <p style="color: #6b7280; font-size: 12px;">
+          This message was sent via the contact form on ${tenantName}'s website.
+        </p>
+      </div>
+    `;
+
+    return this.sendEmail({
+      to: tenantEmail,
+      subject: `📬 Contact Form: ${subject}`,
+      html,
+    });
+  }
 }

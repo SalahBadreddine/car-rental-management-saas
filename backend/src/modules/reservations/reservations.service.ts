@@ -2,6 +2,7 @@ import { BadRequestException, Inject, Injectable, InternalServerErrorException }
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../common/providers/supabase.provider';
 import { NotificationsService } from '../notifications/notifications.service';
+import { EmailService } from '../email/email.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class ReservationsService {
     @Inject(SUPABASE_CLIENT)
     private readonly supabaseClient: SupabaseClient,
     private readonly notificationsService: NotificationsService,
+    private readonly emailService: EmailService,
   ) {}
 
   async create(dto: CreateReservationDto, tenantId: string | null, customerId: string) {
@@ -204,40 +206,46 @@ export class ReservationsService {
       .update({ status })
       .eq('id', id)
       .eq('tenant_id', tenantId)
-      .select('*, cars(make, model), profiles:customer_id(id, full_name)')
+      .select('*, cars(make, model), profiles:customer_id(id, full_name, email)')
       .single();
 
     if (error) {
       throw new InternalServerErrorException(`Failed to update reservation: ${error.message}`);
     }
 
-    // Send notification to customer based on status change
+    // Send notification and email to customer based on status change
     if (data && data.profiles?.id) {
       const vehicleName = data.cars ? `${data.cars.make} ${data.cars.model}` : 'your vehicle';
       const customerName = data.profiles?.full_name ?? 'Customer';
+      const customerEmail = data.profiles?.email;
       
       let notificationTitle = '';
       let notificationMessage = '';
       let notificationType: 'reservation_confirmed' | 'reservation_cancelled' | 'reservation_completed' | null = null;
+      let emailStatus: 'confirmed' | 'cancelled' | 'completed' | null = null;
 
       switch (status) {
         case 'confirmed':
           notificationTitle = 'Reservation Confirmed';
           notificationMessage = `Your reservation for ${vehicleName} has been confirmed.`;
           notificationType = 'reservation_confirmed';
+          emailStatus = 'confirmed';
           break;
         case 'cancelled':
           notificationTitle = 'Reservation Cancelled';
           notificationMessage = `Your reservation for ${vehicleName} has been cancelled.`;
           notificationType = 'reservation_cancelled';
+          emailStatus = 'cancelled';
           break;
         case 'completed':
           notificationTitle = 'Rental Completed';
           notificationMessage = `Your rental of ${vehicleName} has been completed. Thank you!`;
           notificationType = 'reservation_completed';
+          emailStatus = 'completed';
           break;
       }
 
+      // 1. Send In-App Notification
       if (notificationTitle && notificationType) {
         await this.notificationsService.createNotification({
           userId: data.profiles.id,
@@ -246,6 +254,22 @@ export class ReservationsService {
           message: notificationMessage,
           type: notificationType,
         });
+      }
+
+      // 2. Send Email Notification
+      if (emailStatus && customerEmail) {
+        await this.emailService.sendReservationStatusEmail(
+          customerEmail,
+          emailStatus,
+          {
+            vehicleName,
+            customerName,
+            startDate: new Date(data.start_date).toLocaleDateString(),
+            endDate: new Date(data.end_date).toLocaleDateString(),
+            totalPrice: data.total_price,
+            reservationId: data.id,
+          }
+        );
       }
     }
 

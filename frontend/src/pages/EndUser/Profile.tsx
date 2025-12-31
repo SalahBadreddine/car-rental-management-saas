@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -10,6 +10,7 @@ import { getAccessToken, logout as logoutUser } from "@/lib/auth";
 import { enduserReservationsApi } from "@/services/enduserReservationsApi";
 import { enduserCarsApi } from "@/services/enduserCarsApi";
 import { format } from "date-fns";
+import { useTenantOptional } from "@/contexts/TenantContext";
 
 interface User {
   id: string;
@@ -41,6 +42,7 @@ interface Reservation {
   tenant?: {
     id: string;
     name: string;
+    slug: string;
     contact_email?: string;
     phone_number?: string;
     logo_url?: string;
@@ -50,6 +52,9 @@ interface Reservation {
 const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const { tenantSlug: currentTenantSlug } = useTenantOptional();
+  
   const [user, setUser] = useState<User | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,7 +63,7 @@ const Profile = () => {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Fetch user profile
+
       const token = getAccessToken();
       if (!token) {
         toast({
@@ -80,7 +85,7 @@ const Profile = () => {
         setUser(userResponse.data);
       }
 
-      // Fetch reservations separately to handle errors better
+
       let reservationsData: Reservation[] = [];
       try {
         reservationsData = await enduserReservationsApi.getMyReservations();
@@ -98,14 +103,14 @@ const Profile = () => {
         console.log('No reservations found');
         setReservations([]);
       } else {
-        // Backend returns 'cars' (plural) as nested object, map it to 'car' for consistency
+
         const enrichedReservations = await Promise.all(
           reservationsData.map(async (reservation: any) => {
-            // Backend may return car data in 'cars' field (nested object from join)
+
             let carData = reservation.cars || reservation.car;
             const tenantId = reservation.tenant_id || carData?.tenant_id;
             
-            // If car data is not in the response, fetch it separately
+
             if (!carData && reservation.car_id) {
               try {
                 const car = await enduserCarsApi.getCarById(reservation.car_id);
@@ -122,7 +127,7 @@ const Profile = () => {
                 console.error('Error fetching car for reservation:', reservation.car_id, error);
               }
             } else if (carData) {
-              // Normalize car data structure
+
               carData = {
                 id: carData.id || reservation.car_id,
                 make: carData.make,
@@ -134,7 +139,7 @@ const Profile = () => {
               };
             }
 
-            // Fetch tenant information
+
             let tenantData = null;
             if (tenantId) {
               try {
@@ -150,6 +155,7 @@ const Profile = () => {
               tenant: tenantData ? {
                 id: tenantData.id,
                 name: tenantData.name,
+                slug: tenantData.slug,
                 contact_email: tenantData.contact_email,
                 phone_number: tenantData.phone_number,
                 logo_url: tenantData.logo_url,
@@ -197,7 +203,7 @@ const Profile = () => {
     });
   };
 
-  // Categorize reservations - include pending, confirmed, and active statuses
+
   const activeReservations = reservations.filter(r => {
     const endDate = new Date(r.end_date);
     const startDate = new Date(r.start_date);
@@ -225,6 +231,16 @@ const Profile = () => {
     return diffDays;
   };
 
+
+  const getNavPath = (path: string, targetTenantSlug?: string) => {
+    const slug = targetTenantSlug || currentTenantSlug;
+    if (slug) {
+      return `/${slug}${path.startsWith('/') ? path : '/' + path}`; 
+    }
+    // Fallback if no tenant context (should shouldn't happen for these actions usually)
+    return path;
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
@@ -242,9 +258,9 @@ const Profile = () => {
       <Header />
       
       <main className="flex-1 container mx-auto px-4 py-12">
-        {/* Personal Information Section */}
+
         <div className="bg-black rounded-2xl p-8 mb-12 relative overflow-hidden">
-          {/* Tire track pattern background */}
+
           <div className="absolute inset-0 opacity-5">
             <div className="absolute inset-0" style={{
               backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px)'
@@ -259,7 +275,7 @@ const Profile = () => {
                 </h1>
                 <p className="font-heading text-2xl text-white">{user?.full_name || "User"}</p>
               </div>
-              <Link to="/profile/edit">
+              <Link to={getNavPath("/profile/edit")}>
                 <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
                   <Edit className="w-6 h-6" />
                 </Button>
@@ -299,7 +315,7 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Active & Upcoming Reservations Section */}
+
         <div className="mb-12">
           <div className="flex items-center justify-between mb-8">
             <h2 className="font-heading text-4xl font-bold">Rented Cars :</h2>
@@ -371,7 +387,7 @@ const Profile = () => {
                         {reservation.tenant && (
                           <div 
                             className="flex items-center gap-2 text-muted-foreground mb-4 cursor-pointer hover:text-primary transition-colors"
-                            onClick={() => reservation.tenant_id && navigate(`/enduser/tenant/${reservation.tenant_id}`)}
+                            onClick={() => reservation.tenant?.slug && navigate(`/${reservation.tenant.slug}`)}
                           >
                             <Building2 className="w-4 h-4" />
                             <span className="text-sm">
@@ -384,13 +400,13 @@ const Profile = () => {
                         
                         <div className="flex gap-2">
                           <Button 
-                            onClick={() => navigate(`/enduser/reservation/${reservation.id}`)}
+                            onClick={() => navigate(getNavPath(`/reservation/${reservation.id}`, reservation.tenant?.slug))}
                             className="flex-1 bg-[#D32F2F] hover:bg-[#B71C1C] text-white font-semibold px-4 py-2 rounded-lg"
                           >
                             View Details
                           </Button>
                           <Button 
-                            onClick={() => navigate(`/vehicles/${reservation.car_id}`)}
+                            onClick={() => navigate(getNavPath(`/vehicles/${reservation.car_id}`, reservation.tenant?.slug))}
                             variant="outline"
                             className="px-4 py-2 rounded-lg"
                           >
@@ -450,7 +466,7 @@ const Profile = () => {
                       {reservation.tenant && (
                         <div 
                           className="flex items-center gap-2 text-muted-foreground mb-4 cursor-pointer hover:text-primary transition-colors"
-                          onClick={() => reservation.tenant_id && navigate(`/enduser/tenant/${reservation.tenant_id}`)}
+                          onClick={() => reservation.tenant?.slug && navigate(`/${reservation.tenant.slug}`)}
                         >
                           <Building2 className="w-4 h-4" />
                           <span className="text-sm">
@@ -463,13 +479,13 @@ const Profile = () => {
                       
                       <div className="flex gap-2">
                         <Button 
-                          onClick={() => navigate(`/enduser/reservation/${reservation.id}`)}
+                          onClick={() => navigate(getNavPath(`/reservation/${reservation.id}`, reservation.tenant?.slug))}
                           className="flex-1 bg-[#D32F2F] hover:bg-[#B71C1C] text-white font-semibold px-4 py-2 rounded-lg"
                         >
                           View Details
                         </Button>
                         <Button 
-                          onClick={() => navigate(`/vehicles/${reservation.car_id}`)}
+                          onClick={() => navigate(getNavPath(`/vehicles/${reservation.car_id}`, reservation.tenant?.slug))}
                           variant="outline"
                           className="px-4 py-2 rounded-lg"
                         >
@@ -489,7 +505,7 @@ const Profile = () => {
           )}
         </div>
 
-        {/* Previous Reservations Section */}
+
         <div>
           <div className="flex items-center justify-between mb-8">
             <h2 className="font-heading text-4xl font-bold">Previous Reservations</h2>
@@ -537,7 +553,7 @@ const Profile = () => {
                               {reservation.status || 'pending'}
                             </span>
                           </td>
-                          <td className="p-4 text-[#D32F2F] font-bold">${reservation.total_price.toFixed(2)}</td>
+                          <td className="p-4 text-[#D32F2F] font-bold">{reservation.total_price.toFixed(2)} DZD</td>
                           <td className="p-4">{days} Day{days !== 1 ? 's' : ''}</td>
                           <td className="p-4">{format(startDate, "dd/MM/yyyy")}</td>
                           <td className="p-4 text-muted-foreground font-mono text-sm">
@@ -546,7 +562,7 @@ const Profile = () => {
                           <td className="p-4">
                             <div className="flex gap-2">
                               <Button 
-                                onClick={() => navigate(`/enduser/reservation/${reservation.id}`)}
+                                onClick={() => navigate(getNavPath(`/reservation/${reservation.id}`, reservation.tenant?.slug))}
                                 variant="ghost" 
                                 size="sm"
                                 className="text-[#D32F2F] hover:text-[#B71C1C] hover:bg-[#D32F2F]/10"
@@ -554,7 +570,7 @@ const Profile = () => {
                                 View Details
                               </Button>
                               <Button 
-                                onClick={() => navigate(`/vehicles/${reservation.car_id}`)}
+                                onClick={() => navigate(getNavPath(`/vehicles/${reservation.car_id}`, reservation.tenant?.slug))}
                                 variant="ghost" 
                                 size="sm"
                                 className="text-muted-foreground hover:text-primary"
