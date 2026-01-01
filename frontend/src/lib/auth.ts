@@ -20,7 +20,7 @@ export const getUserRole = () => {
   return user?.role || localStorage.getItem("user_role") || "enduser"
 }
 
-export const setUserRole = (role: "client" | "enduser") => {
+export const setUserRole = (role: "client" | "enduser" | "super_admin") => {
   localStorage.setItem("user_role", role)
   const user = getUser()
   if (user) {

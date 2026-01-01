@@ -1,8 +1,6 @@
-import { IsString, IsEmail, IsOptional, IsUrl } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsUrl, IsObject } from 'class-validator';
 
 export class UpdateTenantDto {
-  @IsString()
-  @IsOptional()
   @IsString()
   @IsOptional()
   name?: string;
@@ -22,5 +20,9 @@ export class UpdateTenantDto {
   @IsUrl()
   @IsOptional()
   logoUrl?: string; // This is set automatically by the controller when a file is uploaded
+
+  @IsOptional()
+  @IsObject()
+  websiteConfig?: Record<string, any>;
 }
 

@@ -24,7 +24,7 @@ function EndUserFAQContent() {
       <Header />
 
       <main className="flex-1">
-        {/* Hero Section - Same style as client side */}
+
         <HeroBackground trace={traceCar} car={heroCar}>
           <div>
             <h1 className="font-heading text-5xl md:text-6xl font-bold mb-4 leading-tight text-white">
@@ -38,7 +38,7 @@ function EndUserFAQContent() {
           </div>
         </HeroBackground>
 
-        {/* FAQ Content */}
+
         <div className="py-12 bg-background">
           <div className="container mx-auto px-4 max-w-4xl">
             <div className="space-y-12">
@@ -57,7 +57,7 @@ function EndUserFAQContent() {
               ))}
             </div>
 
-            {/* Support CTA */}
+
             <Card className="bg-gray-100 p-8 rounded-xl text-center border border-border mt-12">
               <p className="text-lg mb-4">
                 Can't find your answer?{" "}

@@ -39,7 +39,7 @@ const LocationSelect = () => {
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">Select Your Location</h1>
             <p className="text-lg text-white/80 mb-10">Choose which rental location you want to manage today</p>
 
-            {/* Location Selection Grid - Now in Hero Section */}
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {CLIENT_LOCATIONS.map((location) => (
                 <Card

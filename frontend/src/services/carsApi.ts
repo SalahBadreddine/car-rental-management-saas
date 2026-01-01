@@ -24,6 +24,7 @@ export interface Car {
   rental_count: number;
   gallery_urls: string[] | null;
   created_at: string;
+  is_featured?: boolean;
 }
 
 export interface SearchFilters {
@@ -148,7 +149,7 @@ export const carsApi = {
     try {
       const formData = new FormData();
       
-      // Add text fields
+
       Object.entries(data).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           if (key === 'features' && Array.isArray(value)) {
@@ -164,7 +165,7 @@ export const carsApi = {
         }
       });
       
-      // Add files
+
       if (primaryImage) {
         formData.append('primaryImage', primaryImage);
       }
@@ -174,7 +175,7 @@ export const carsApi = {
         });
       }
       
-      // Use fetch directly for FormData (apiRequest sends JSON)
+
       const token = localStorage.getItem('access_token');
       const response = await fetch(`${API_BASE_URL}/cars`, {
         method: 'POST',
@@ -187,7 +188,7 @@ export const carsApi = {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error('Failed to create car:', errorData);
-        // Log validation errors clearly
+
         if (Array.isArray(errorData.message)) {
           console.error('Validation errors:', errorData.message.join(', '));
         }
@@ -208,21 +209,21 @@ export const carsApi = {
     try {
       const formData = new FormData();
       
-      // Add text fields (excluding arrays)
+
       Object.entries(data).forEach(([key, value]) => {
         if (value !== undefined && value !== null && !Array.isArray(value)) {
           formData.append(key, String(value));
         }
       });
       
-      // Add arrays as separate entries with same key
+
       if (data.features && Array.isArray(data.features)) {
         data.features.forEach(feature => {
           formData.append('features', feature);
         });
       }
       
-      // Add files
+
       if (primaryImage) {
         formData.append('primaryImage', primaryImage);
       }
@@ -384,6 +385,33 @@ export const carsApi = {
     } catch (error) {
       console.error('Error fetching categories:', error);
       return [];
+    }
+  },
+
+  /**
+   * Toggle car featured status (Best Deal)
+   */
+  async toggleFeatured(id: string, isFeatured: boolean): Promise<Car | null> {
+    try {
+
+      if (isFeatured) {
+        const featuredCars = await this.getFeaturedCars(10);
+        if (featuredCars.length >= 3) {
+          throw new Error('Maximum 3 cars can be featured as Best Deals. Please unfeature another car first.');
+        }
+      }
+      
+      const response = await apiRequest(`/cars/${id}`, 'PATCH', { isFeatured });
+      
+      if (response.status !== 200) {
+        console.error('Failed to toggle featured status:', response.data);
+        return null;
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Error toggling featured status:', error);
+      throw error;
     }
   },
 };

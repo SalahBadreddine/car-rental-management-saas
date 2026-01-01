@@ -14,13 +14,13 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [accessToken, setAccessToken] = useState<string | null>(null);
   
-  // States: verifying (checking token), idle (form), loading (submitting), success, error
+
   const [status, setStatus] = useState<"verifying" | "idle" | "loading" | "success" | "error">("verifying");
   const [errorMessage, setErrorMessage] = useState("");
 
   const API_URL = "http://localhost:3000";
 
-  // 1. Extract token on mount
+
   useEffect(() => {
     const hash = window.location.hash;
     if (!hash) {
@@ -29,12 +29,12 @@ const ResetPassword = () => {
       return;
     }
 
-    const params = new URLSearchParams(hash.substring(1)); // remove #
+    const params = new URLSearchParams(hash.substring(1));
     const token = params.get("access_token");
 
     if (token) {
       setAccessToken(token);
-      setStatus("idle"); // Token found, show form
+      setStatus("idle");
     } else {
       setErrorMessage("Invalid link. Please request a new password reset.");
       setStatus("error");
@@ -76,7 +76,7 @@ const ResetPassword = () => {
 
       if (res.ok) {
         setStatus("success");
-        // Auto-redirect after 3 seconds
+
         setTimeout(() => {
           navigate("/signin", { 
             state: { message: "Password reset successfully! Please log in with your new password." } 
@@ -86,7 +86,7 @@ const ResetPassword = () => {
         const data = await res.json().catch(() => ({}));
         let message = "Failed to reset password. The link may have expired.";
         
-        // Handle NestJS class-validator error array
+
         if (Array.isArray(data.message)) {
           message = data.message.join(", ");
         } else if (data.message) {
@@ -102,8 +102,6 @@ const ResetPassword = () => {
       setStatus("error");
     } finally {
       if (status !== "success") {
-        // Only reset loading if not successful (success stays to show success UI)
-        // actually setStatus logic handles this implicitly
       }
     }
   };
@@ -115,7 +113,7 @@ const ResetPassword = () => {
         <div className="max-w-md w-full p-8 bg-white/10 backdrop-blur-sm rounded-xl shadow-2xl space-y-6">
           <h2 className="text-3xl font-bold text-center text-white">Set New Password</h2>
           
-          {/* VERIFYING STATE */}
+
           {status === "verifying" && (
             <div className="text-center py-8">
                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
@@ -123,7 +121,7 @@ const ResetPassword = () => {
             </div>
           )}
 
-          {/* ERROR STATE */}
+
           {status === "error" && (
             <div className="text-center space-y-4">
               <div className="bg-red-500/20 text-red-300 p-4 rounded-lg border border-red-500/30">
@@ -137,7 +135,7 @@ const ResetPassword = () => {
             </div>
           )}
 
-          {/* SUCCESS STATE */}
+
           {status === "success" && (
             <div className="text-center space-y-4">
                <div className="h-16 w-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto border border-green-500/50">
@@ -158,7 +156,7 @@ const ResetPassword = () => {
             </div>
           )}
 
-          {/* IDLE / LOADING STATE (FORM) */}
+
           {(status === "idle" || status === "loading") && (
             <>
               {errorMessage && (

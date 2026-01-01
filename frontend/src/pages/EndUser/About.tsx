@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Users, Car as CarIcon, Headphones } from "lucide-react";
 import heroCar from "@/assets/car_home.png";
 import traceCar from "@/assets/car_trace.png";
+import TenantContentEditor from "@/components/TenantContentEditor";
 
 const About = () => {
   return (
@@ -16,11 +17,18 @@ const About = () => {
       <HeroBackground trace={traceCar} car={heroCar}>
         <div>
           <h1 className="font-heading text-5xl md:text-6xl font-bold mb-4 leading-tight">
-            <span className="text-[#D32F2F]">About US</span>
+            <span className="text-[#D32F2F]">
+              <TenantContentEditor sectionKey="about_hero_title" defaultContent="About US" />
+            </span>
           </h1>
-          <p className="text-2xl text-white font-semibold mb-2">Our Story: Driving Your Adventures</p>
+          <p className="text-2xl text-white font-semibold mb-2">
+            <TenantContentEditor sectionKey="about_hero_subtitle" defaultContent="Our Story: Driving Your Adventures" />
+          </p>
           <p className="text-lg text-white/80 leading-relaxed">
-            We are committed to providing reliable, affordable, and high-quality car rental services for every journey.
+            <TenantContentEditor 
+              sectionKey="about_hero_desc" 
+              defaultContent="We are committed to providing reliable, affordable, and high-quality car rental services for every journey."
+            />
           </p>
         </div>
       </HeroBackground>
@@ -29,13 +37,17 @@ const About = () => {
       <section className="py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <h2 className="font-heading text-4xl md:text-5xl font-bold mb-4">Our Foundation</h2>
+            <h2 className="font-heading text-4xl md:text-5xl font-bold mb-4">
+              <TenantContentEditor sectionKey="about_foundation_title" defaultContent="Our Foundation" />
+            </h2>
             <h3 className="font-heading text-2xl font-semibold text-muted-foreground mb-6">
-              More Than Just Transportation
+              <TenantContentEditor sectionKey="about_foundation_subtitle" defaultContent="More Than Just Transportation" />
             </h3>
             <p className="text-lg text-muted-foreground leading-relaxed mb-12">
-              RentoGo was founded on the simple principle that renting a car should be easy, transparent, and enjoyable. 
-              Since 2025, we've grown from a local service to a trusted national brand.
+              <TenantContentEditor 
+                sectionKey="about_foundation_desc" 
+                defaultContent="RentoGo was founded on the simple principle that renting a car should be easy, transparent, and enjoyable. Since 2025, we've grown from a local service to a trusted national brand."
+              />
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -43,9 +55,14 @@ const About = () => {
                 <div className="w-16 h-16 rounded-full bg-[#D32F2F] flex items-center justify-center mb-4">
                   <Users className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="font-heading text-xl font-bold mb-3">100% Transparency</h3>
+                <h3 className="font-heading text-xl font-bold mb-3">
+                  <TenantContentEditor sectionKey="about_feature_1_title" defaultContent="100% Transparency" />
+                </h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  No hidden fees, no surprises. What you see is what you pay. We believe clear, honest pricing is the only way to do business.
+                  <TenantContentEditor 
+                    sectionKey="about_feature_1_desc" 
+                    defaultContent="No hidden fees, no surprises. What you see is what you pay. We believe clear, honest pricing is the only way to do business." 
+                  />
                 </p>
               </div>
 
@@ -53,9 +70,14 @@ const About = () => {
                 <div className="w-16 h-16 rounded-full bg-[#D32F2F] flex items-center justify-center mb-4">
                   <CarIcon className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="font-heading text-xl font-bold mb-3">Modern & Safe Fleet</h3>
+                <h3 className="font-heading text-xl font-bold mb-3">
+                  <TenantContentEditor sectionKey="about_feature_2_title" defaultContent="Modern & Safe Fleet" />
+                </h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Our cars are new, meticulously maintained, and feature the latest safety technology to ensure your peace of mind on the road.
+                  <TenantContentEditor 
+                    sectionKey="about_feature_2_desc" 
+                    defaultContent="Our cars are new, meticulously maintained, and feature the latest safety technology to ensure your peace of mind on the road." 
+                  />
                 </p>
               </div>
 
@@ -63,9 +85,14 @@ const About = () => {
                 <div className="w-16 h-16 rounded-full bg-[#D32F2F] flex items-center justify-center mb-4">
                   <Headphones className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="font-heading text-xl font-bold mb-3">24/7 Support</h3>
+                <h3 className="font-heading text-xl font-bold mb-3">
+                  <TenantContentEditor sectionKey="about_feature_3_title" defaultContent="24/7 Support" />
+                </h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  We're here for you whenever you need us. Our dedicated customer support team is available around the clock for assistance.
+                  <TenantContentEditor 
+                    sectionKey="about_feature_3_desc" 
+                    defaultContent="We're here for you whenever you need us. Our dedicated customer support team is available around the clock for assistance." 
+                  />
                 </p>
               </div>
             </div>
@@ -77,14 +104,18 @@ const About = () => {
       <section className="py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="font-heading text-4xl md:text-5xl font-bold mb-6">Ready to hit the road?</h2>
+            <h2 className="font-heading text-4xl md:text-5xl font-bold mb-6">
+              <TenantContentEditor sectionKey="about_cta_title" defaultContent="Ready to hit the road?" />
+            </h2>
             <p className="text-lg text-muted-foreground leading-relaxed mb-8">
-              Whether it's a weekend getaway or a long business trip, we have the perfect vehicle waiting for you. 
-              Discover the RentoGo difference today.
+              <TenantContentEditor 
+                sectionKey="about_cta_desc" 
+                defaultContent="Whether it's a weekend getaway or a long business trip, we have the perfect vehicle waiting for you. Discover the RentoGo difference today." 
+              />
             </p>
             <Link to="/vehicles">
               <Button className="bg-[#D32F2F] hover:bg-[#B71C1C] text-white font-semibold px-8 py-6 text-lg rounded-lg">
-                Use our website
+                <TenantContentEditor sectionKey="about_cta_button" defaultContent="Use our website" />
               </Button>
             </Link>
           </div>

@@ -35,7 +35,7 @@ const RoleSelection = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header */}
+
       <header className="bg-muted/50 sticky top-0 z-50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -47,7 +47,7 @@ const RoleSelection = () => {
         </div>
       </header>
 
-      {/* Hero Section with Role Selection */}
+
       <HeroBackground trace={traceCar} car={heroCar}>
         <div className="max-w-2xl w-full">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
@@ -56,7 +56,7 @@ const RoleSelection = () => {
           <p className="text-lg text-white/80 mb-12">Choose how you want to experience our car rental platform</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Client Card */}
+
             <Card className="p-8 bg-white/10 backdrop-blur-sm border-white/20 hover:border-white/40 transition-all cursor-pointer hover:bg-white/20 group">
               <div className="h-full flex flex-col" onClick={handleClientRole}>
                 <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -78,7 +78,7 @@ const RoleSelection = () => {
               </div>
             </Card>
 
-            {/* End User Card */}
+
             <Card className="p-8 bg-white/10 backdrop-blur-sm border-white/20 hover:border-white/40 transition-all cursor-pointer hover:bg-white/20 group">
               <div className="h-full flex flex-col" onClick={handleUserRole}>
                 <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">

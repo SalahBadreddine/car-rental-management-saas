@@ -12,7 +12,7 @@ import { reservationsApi, type Reservation } from "@/services/reservationsApi"
 import { carsApi, type Car } from "@/services/carsApi"
 import { useToast } from "@/hooks/use-toast"
 
-// Format currency helper
+
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('ar-DZ', {
     style: 'currency',
@@ -21,7 +21,7 @@ const formatCurrency = (amount: number) => {
   }).format(amount).replace('DZD', 'DA')
 }
 
-// Format date helper
+
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('en-US', {
     weekday: 'long',
@@ -31,7 +31,7 @@ const formatDate = (dateString: string) => {
   })
 }
 
-// Calculate days between dates
+
 const calculateDays = (startDate: string, endDate: string) => {
   const start = new Date(startDate)
   const end = new Date(endDate)
@@ -39,7 +39,7 @@ const calculateDays = (startDate: string, endDate: string) => {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 }
 
-// Get status badge color
+
 const getStatusBadge = (status: string) => {
   switch (status) {
     case 'pending':
@@ -65,7 +65,7 @@ export default function ReservationDetails() {
   const [car, setCar] = useState<Car | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
 
-  // Fetch reservation data
+
   useEffect(() => {
     const fetchData = async () => {
       if (!id) return
@@ -76,7 +76,7 @@ export default function ReservationDetails() {
         if (reservationData) {
           setReservation(reservationData)
           
-          // Fetch car details if we have car_id
+
           if (reservationData.car_id) {
             const carData = await carsApi.getCarById(reservationData.car_id)
             setCar(carData)
@@ -97,7 +97,7 @@ export default function ReservationDetails() {
     fetchData()
   }, [id])
 
-  // Handle status update
+
   const handleStatusUpdate = async (newStatus: string) => {
     if (!id || !reservation) return
 
@@ -122,7 +122,7 @@ export default function ReservationDetails() {
     }
   }
 
-  // Handle cancel
+
   const handleCancel = async () => {
     if (!id || !confirm('Are you sure you want to cancel this reservation?')) return
 
@@ -147,7 +147,7 @@ export default function ReservationDetails() {
     }
   }
 
-  // Get available status transitions
+
   const getStatusOptions = (currentStatus: string) => {
     switch (currentStatus) {
       case "pending":
@@ -205,7 +205,7 @@ export default function ReservationDetails() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Car Card */}
+
           <div className="lg:col-span-1">
             <Card className="p-6 border rounded-xl">
               <div className="w-full h-40 bg-muted rounded-lg mb-4 flex items-center justify-center overflow-hidden">
@@ -235,7 +235,7 @@ export default function ReservationDetails() {
                 </div>
               </div>
 
-              {/* Car Specs */}
+
               {car && (
                 <div className="flex justify-around py-4 border-t border-b mb-4">
                   <div className="text-center">
@@ -264,9 +264,9 @@ export default function ReservationDetails() {
             </Card>
           </div>
 
-          {/* Right Column */}
+
           <div className="lg:col-span-2 space-y-6">
-            {/* Customer Info */}
+
             <Card className="p-6 border rounded-xl">
               <h3 className="font-bold text-xl mb-4 flex items-center gap-2">
                 <User className="w-5 h-5" />
@@ -295,7 +295,7 @@ export default function ReservationDetails() {
               </div>
             </Card>
 
-            {/* Rental Period */}
+
             <Card className="p-6 border rounded-xl">
               <h3 className="font-bold text-xl mb-4 flex items-center gap-2">
                 <Clock className="w-5 h-5" />
@@ -317,7 +317,7 @@ export default function ReservationDetails() {
               </div>
             </Card>
 
-            {/* Payment Summary */}
+
             <Card className="p-6 border rounded-xl">
               <h3 className="font-bold text-xl mb-4 flex items-center gap-2">
                 <DollarSign className="w-5 h-5" />
@@ -341,7 +341,7 @@ export default function ReservationDetails() {
               </div>
             </Card>
 
-            {/* Notes */}
+
             {reservation.notes && (
               <Card className="p-6 border rounded-xl">
                 <h3 className="font-bold text-xl mb-4">Notes</h3>
@@ -349,7 +349,7 @@ export default function ReservationDetails() {
               </Card>
             )}
 
-            {/* Actions */}
+
             <Card className="p-6 border rounded-xl">
               <h3 className="font-bold text-xl mb-4">Actions</h3>
               <div className="flex gap-4">

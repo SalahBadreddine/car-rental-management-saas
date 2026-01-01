@@ -69,13 +69,19 @@ const SignIn = () => {
       saveTokens(data.access_token, data.refresh_token)
       saveUser(data.user)
       setUser(data.user)
-      setUserRole(role)
+      // setUser calls setUserRole internally based on the user object, so we don't need to call it manually
+      // unless we want to force a specific view context, but for super_admin we typically trust the backend role.
+      
+      // Route based on actual backend role, not query param
+      const backendRole = data.user.role
 
-      // Redirect based on role
-      if (role === "client") {
-        navigate("/client/location-select", { replace: true })
+      if (backendRole === "client_admin" || backendRole === "client") {
+        navigate("/client/dashboard", { replace: true })
+      } else if (backendRole === "super_admin") {
+        navigate("/admin/dashboard", { replace: true })
       } else {
-        navigate("/enduser", { replace: true })
+        // Customer/enduser - go to browse page
+        navigate("/browse", { replace: true })
       }
     } catch (err) {
       console.error(err)
@@ -97,14 +103,14 @@ const SignIn = () => {
               : "Welcome back! Sign in to browse and rent cars."}
           </p>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Success Message Display Logic */}
+
             {successMessage && (
               <div className="bg-green-500/20 text-green-300 p-3 rounded-lg text-sm text-center border border-green-500/30">
                 {successMessage}
               </div>
             )}
 
-            {/* Error Display Logic */}
+
             {error && <div className="bg-red-500/20 text-red-300 p-3 rounded-lg text-sm text-center">{error}</div>}
 
             <Input

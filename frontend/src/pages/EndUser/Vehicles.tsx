@@ -12,6 +12,7 @@ import { enduserCarsApi, type EndUserCar } from "@/services/enduserCarsApi"
 import { LoadingSpinner } from "@/components/LoadingSpinner"
 import { useToast } from "@/hooks/use-toast"
 import { apiRequest } from "@/lib/api"
+import { useTenant } from "@/contexts/TenantContext"
 
 const carTypes: Array<{ value: string; label: string; icon: string }> = [
   { value: "Cabriolet", label: "Cabriolet", icon: "🚗" },
@@ -40,6 +41,8 @@ const Vehicles = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { toast } = useToast()
+  const { tenantId, tenantSlug, locations: tenantLocations } = useTenant()
+  
   const [isLoading, setIsLoading] = useState(true)
   const [cars, setCars] = useState<CarWithDetails[]>([])
   const [brands, setBrands] = useState<string[]>([])
@@ -64,69 +67,35 @@ const Vehicles = () => {
 
   const [isInitialLoad, setIsInitialLoad] = useState(true)
 
-  // Fetch tenant and location data for cars
-  const enrichCarsWithDetails = async (carsData: EndUserCar[]): Promise<CarWithDetails[]> => {
-    try {
-      // Get all tenants
-      const tenants = await enduserCarsApi.getAllTenants()
-      const tenantMap = new Map(tenants.map(t => [t.id, t]))
 
-      // Get unique tenant IDs and location IDs
-      const tenantIds = [...new Set(carsData.map(c => c.tenant_id))]
-      const locationIds = [...new Set(carsData.map(c => c.location_id).filter(Boolean))]
 
-      // Fetch locations for all tenants
-      const locationPromises = tenantIds.map(async (tenantId) => {
-        try {
-          const response = await apiRequest(`/locations?tenantId=${tenantId}`, 'GET')
-          if (response.status === 200) {
-            return response.data || []
-          }
-          return []
-        } catch {
-          return []
-        }
-      })
-
-      const locationArrays = await Promise.all(locationPromises)
-      const locationMap = new Map()
-      locationArrays.flat().forEach((loc: any) => {
-        locationMap.set(loc.id, loc)
-      })
-
-      // Enrich cars with tenant and location info
-      return carsData.map(car => {
-        const tenant = tenantMap.get(car.tenant_id)
-        const location = car.location_id ? locationMap.get(car.location_id) : null
-
-        return {
-          ...car,
-          tenantName: tenant?.name,
-          locationName: location?.name,
-          locationCity: location?.city,
-        }
-      })
-    } catch (error) {
-      console.error('Error enriching cars with details:', error)
-      return carsData.map(car => ({ ...car }))
-    }
-  }
-
-  // Fetch cars and brands on mount
   useEffect(() => {
+    if (!tenantId) return // Wait for tenant to load
+    
     const fetchData = async () => {
       setIsLoading(true)
       try {
-        const [carsData, brandsData] = await Promise.all([
-          enduserCarsApi.getAllCars(),
-          enduserCarsApi.getBrands(),
-        ])
+        // Fetch cars from current tenant only
+        const carsData = await enduserCarsApi.getCarsFromTenant(tenantId, {
+          status: 'available',
+          locationId: filters.locationId || undefined,
+        })
         
-        // Enrich cars with tenant and location details
-        const enrichedCars = await enrichCarsWithDetails(carsData)
+        // Get unique brands from fetched cars
+        const uniqueBrands = [...new Set(carsData.map(c => c.make))].filter(Boolean).sort()
+        
+        // Enrich cars with location details from tenant context
+        const enrichedCars: CarWithDetails[] = carsData.map(car => {
+          const loc = tenantLocations.find(l => l.id === car.location_id)
+          return {
+            ...car,
+            locationName: loc?.name,
+            locationCity: loc?.city,
+          }
+        })
         
         setCars(enrichedCars)
-        setBrands(brandsData)
+        setBrands(uniqueBrands)
         setIsInitialLoad(false)
       } catch (error) {
         console.error('Error fetching cars:', error)
@@ -142,12 +111,12 @@ const Vehicles = () => {
     }
 
     fetchData()
-  }, [toast])
+  }, [tenantId, filters.locationId, tenantLocations, toast])
 
-  // Search cars when filters change (but not on initial load)
+
   useEffect(() => {
-    // Skip if still on initial load
-    if (isInitialLoad) return
+    // Skip if still on initial load or no tenantId
+    if (isInitialLoad || !tenantId) return
     
     const searchCars = async () => {
       setIsLoading(true)
@@ -163,10 +132,17 @@ const Vehicles = () => {
         if (filters.endingPrice !== null) searchFilters.endingPrice = filters.endingPrice
         if (filters.locationId) searchFilters.locationId = filters.locationId
 
-        const results = await enduserCarsApi.searchCars(searchFilters)
+        const results = await enduserCarsApi.getCarsFromTenant(tenantId, searchFilters)
         
-        // Enrich cars with tenant and location details
-        const enrichedCars = await enrichCarsWithDetails(results)
+        // Add location details to cars
+        const enrichedCars: CarWithDetails[] = results.map(car => {
+          const loc = tenantLocations.find(l => l.id === car.location_id)
+          return {
+            ...car,
+            locationName: loc?.name,
+            locationCity: loc?.city,
+          }
+        })
         
         setCars(enrichedCars)
       } catch (error) {
@@ -181,13 +157,13 @@ const Vehicles = () => {
       }
     }
 
-    // Debounce search
+
     const timeoutId = setTimeout(() => {
       searchCars()
     }, 300)
 
     return () => clearTimeout(timeoutId)
-  }, [filters, isInitialLoad, toast])
+  }, [filters, isInitialLoad, tenantId, tenantLocations, toast])
 
   const handleFilterChange = (key: keyof CarFilters, value: any, keepOpen = false) => {
     setFilters((prev) => ({ ...prev, [key]: value }))
@@ -195,9 +171,7 @@ const Vehicles = () => {
       setActiveFilter(null)
     }
   }
-
   useEffect(() => {
-    // Sync with localStorage
     localStorage.setItem("compareCars", JSON.stringify(selectedCars))
   }, [selectedCars])
 
@@ -213,10 +187,10 @@ const Vehicles = () => {
   }
 
   const handleViewDetails = (carId: string) => {
-    navigate(`/vehicles/${carId}`)
+    navigate(`/${tenantSlug}/vehicles/${carId}`)
   }
 
-  // Get "On Fire" cars (most rented)
+
   const onFireCars = useMemo(() => {
     return [...cars]
       .sort((a, b) => (b.rental_count || 0) - (a.rental_count || 0))
@@ -241,7 +215,7 @@ const Vehicles = () => {
       <Header />
 
       <main className="flex-1 container mx-auto px-4 py-12">
-        {/* Page Title */}
+
         <div className="text-center mb-8">
           <h1 className="font-heading text-4xl md:text-5xl font-bold mb-4 leading-tight">
             Search for a car and
@@ -250,7 +224,7 @@ const Vehicles = () => {
           </h1>
         </div>
 
-        {/* Search Bar */}
+
         <div className="mb-8">
           <div className="relative max-w-4xl mx-auto">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
@@ -267,7 +241,7 @@ const Vehicles = () => {
           </div>
         </div>
 
-        {/* Filter Controls */}
+
         <div className="flex flex-wrap justify-center gap-4 mb-12">
           <Popover open={activeFilter === "Brand"} onOpenChange={(open) => setActiveFilter(open ? "Brand" : null)}>
             <PopoverTrigger asChild>
@@ -362,7 +336,7 @@ const Vehicles = () => {
                       : "bg-muted text-muted-foreground hover:bg-muted/80"
                 }`}
               >
-                Starting price {filters.startingPrice && `($${filters.startingPrice})`}
+                Starting price {filters.startingPrice && `(${filters.startingPrice} DZD)`}
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-64">
@@ -410,7 +384,7 @@ const Vehicles = () => {
                       : "bg-muted text-muted-foreground hover:bg-muted/80"
                 }`}
               >
-                Ending price {filters.endingPrice && `($${filters.endingPrice})`}
+                Ending price {filters.endingPrice && `(${filters.endingPrice} DZD)`}
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-64">
@@ -445,14 +419,14 @@ const Vehicles = () => {
           </Popover>
         </div>
 
-        {/* Loading indicator */}
+
         {isLoading && (
           <div className="flex justify-center items-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
         )}
 
-        {/* Vehicle Grid */}
+
         {!isLoading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
             {cars.map((car) => (
@@ -462,7 +436,7 @@ const Vehicles = () => {
                   selectedCars.includes(car.id) ? "border-primary" : "border-transparent"
                 }`}
               >
-                {/* On Fire Badge */}
+
                 {onFireCars.includes(car.id) && (
                   <div className="absolute top-4 left-4 z-10 flex items-center gap-1 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
                     <Flame className="w-3 h-3" />
@@ -470,7 +444,7 @@ const Vehicles = () => {
                   </div>
                 )}
 
-                {/* Selection Checkbox */}
+
                 <button
                   onClick={() => toggleCarSelection(car.id)}
                   className={`absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-md ${
@@ -482,7 +456,7 @@ const Vehicles = () => {
                   <Check className="w-5 h-5" />
                 </button>
 
-                {/* Car Image - Full Width */}
+
                 <div className="w-full h-48 relative overflow-hidden bg-gradient-to-br from-card-dark to-card-dark/80">
                   {car.primary_image_url ? (
                     <img
@@ -515,12 +489,12 @@ const Vehicles = () => {
                       <p className="text-muted-foreground text-sm">{car.model} {car.year ? `(${car.year})` : ""}</p>
                     </div>
                     <div className="text-right ml-4">
-                      <p className="text-primary font-bold text-xl">${car.price_per_day}</p>
+                      <p className="text-primary font-bold text-xl">{car.price_per_day} DZD</p>
                       <p className="text-muted-foreground text-xs">per day</p>
                     </div>
                   </div>
 
-                  {/* Tenant and Location Info */}
+
                   <div className="mb-3 space-y-1">
                     {car.tenantName && (
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -583,7 +557,7 @@ const Vehicles = () => {
           </div>
         )}
 
-        {/* Compare Cars Button */}
+
         {selectedCars.length > 0 && (
           <div className="text-center mb-12">
             <Button
@@ -597,7 +571,7 @@ const Vehicles = () => {
           </div>
         )}
 
-        {/* Brand Logos */}
+
         <div className="bg-card rounded-2xl p-8 mb-12">
           <div className="flex flex-wrap justify-center items-center gap-12">
             {/* Toyota */}

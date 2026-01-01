@@ -5,10 +5,15 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Download, ArrowLeft, Car as CarIcon, Calendar, Clock, DollarSign, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { type EndUserCar } from "@/services/enduserCarsApi";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTenantOptional } from "@/contexts/TenantContext";
 
 const ReservationConfirmation = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const tenantContext = useTenantOptional();
+  const tenantSlug = tenantContext?.tenantSlug || '';
+  const basePath = tenantSlug ? `/${tenantSlug}` : '';
   const confirmationData = location.state as {
     reservationId: string;
     reservation?: any;
@@ -29,7 +34,7 @@ const ReservationConfirmation = () => {
         <main className="flex-1 container mx-auto px-4 py-12 flex items-center justify-center">
           <div className="text-center">
             <h1 className="font-heading text-4xl font-bold mb-4">Booking Data Not Found</h1>
-            <Button onClick={() => navigate("/vehicles")} className="bg-primary hover:bg-primary/90">
+            <Button onClick={() => navigate(`${basePath}/vehicles`)} className="bg-primary hover:bg-primary/90">
               Back to Vehicles
             </Button>
           </div>
@@ -43,7 +48,6 @@ const ReservationConfirmation = () => {
   const reservationCode = reservation?.confirmation_code || reservationId || `RES-${Date.now().toString().slice(-8)}`;
 
   const handleDownloadReceipt = () => {
-    // Generate receipt HTML
     const receiptHTML = `
       <!DOCTYPE html>
       <html>
@@ -150,7 +154,7 @@ const ReservationConfirmation = () => {
             </div>
             <div class="info-row">
               <span class="info-label">Price per Day:</span>
-              <span class="info-value">$${car.price_per_day.toFixed(2)}</span>
+              <span class="info-value">{car.price_per_day.toFixed(2)} DZD</span>
             </div>
           </div>
 
@@ -159,7 +163,7 @@ const ReservationConfirmation = () => {
             <div class="total">
               <div class="info-row">
                 <span class="info-label">Total Amount:</span>
-                <span class="amount">$${totalPrice.toFixed(2)}</span>
+                <span class="amount">{totalPrice.toFixed(2)} DZD</span>
               </div>
             </div>
           </div>
@@ -174,7 +178,7 @@ const ReservationConfirmation = () => {
       </html>
     `;
 
-    // Create a blob and download
+
     const blob = new Blob([receiptHTML], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -187,7 +191,7 @@ const ReservationConfirmation = () => {
   };
 
   const handleViewProfile = () => {
-    navigate("/profile");
+    navigate(`${basePath}/profile`);
   };
 
   const days = Math.ceil((new Date(returnDate).getTime() - new Date(pickupDate).getTime()) / (1000 * 60 * 60 * 24));
@@ -196,17 +200,17 @@ const ReservationConfirmation = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8 max-w-5xl">
-        {/* Back Button */}
+
         <Button
           variant="ghost"
-          onClick={() => navigate("/vehicles")}
+          onClick={() => navigate(`${basePath}/vehicles`)}
           className="mb-6 flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Vehicles
         </Button>
 
-        {/* Success Header */}
+
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500 rounded-full mb-4">
             <CheckCircle2 className="w-10 h-10 text-white" />
@@ -215,9 +219,9 @@ const ReservationConfirmation = () => {
           <p className="text-muted-foreground">Your reservation has been submitted successfully</p>
         </div>
 
-        {/* Main Content Card */}
+
         <div className="bg-card rounded-lg border border-border shadow-sm mb-6">
-          {/* Reservation Code Header */}
+
           <div className="bg-muted/50 border-b border-border px-6 py-4">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
@@ -232,7 +236,7 @@ const ReservationConfirmation = () => {
 
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Left Column - Car Info */}
+
               <div>
                 <h2 className="font-semibold text-lg mb-4 flex items-center gap-2">
                   <CarIcon className="w-5 h-5 text-primary" />
@@ -257,11 +261,11 @@ const ReservationConfirmation = () => {
                   </div>
                   <h3 className="font-bold text-xl">{car.make} {car.model}</h3>
                   {car.year && <p className="text-muted-foreground">{car.year} • {car.category}</p>}
-                  <p className="text-lg font-semibold text-primary mt-2">${car.price_per_day}/day</p>
+                  <p className="text-lg font-semibold text-primary mt-2">{car.price_per_day} DZD/day</p>
                 </div>
               </div>
 
-              {/* Right Column - Reservation Details */}
+
               <div>
                 <h2 className="font-semibold text-lg mb-4 flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-primary" />
@@ -295,14 +299,14 @@ const ReservationConfirmation = () => {
           </div>
         </div>
 
-        {/* Status Info Box */}
+
         <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
           <p className="text-sm text-yellow-800 dark:text-yellow-200">
             <strong>Note:</strong> Your reservation is pending approval from the rental agency. You will be notified via email once your reservation is approved or rejected.
           </p>
         </div>
 
-        {/* Action Buttons */}
+
         <div className="flex flex-col sm:flex-row gap-4">
           <Button
             onClick={handleViewProfile}
@@ -322,7 +326,7 @@ const ReservationConfirmation = () => {
           </Button>
           <Button
             variant="outline"
-            onClick={() => navigate("/vehicles")}
+            onClick={() => navigate(`${basePath}/vehicles`)}
             className="flex-1"
             size="lg"
           >

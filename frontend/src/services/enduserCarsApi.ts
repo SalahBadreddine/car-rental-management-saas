@@ -1,4 +1,4 @@
-import { apiRequest } from '@/lib/api';
+import { apiRequest, publicApiRequest } from '@/lib/api';
 
 /**
  * Clean and validate image URLs
@@ -70,22 +70,19 @@ interface Tenant {
 
 export const enduserCarsApi = {
   /**
-   * Get all tenants (requires authentication)
+   * Get all tenants (public endpoint for browsing)
    */
   async getAllTenants(): Promise<Tenant[]> {
     try {
-      const response = await apiRequest('/tenants', 'GET');
+      const response = await publicApiRequest('/tenants/public', 'GET');
       if (response.status !== 200) {
         console.error('Failed to fetch tenants:', response.data);
-        if (response.status === 401) {
-          throw new Error('Authentication required. Please sign in to browse cars.');
-        }
         return [];
       }
       return response.data || [];
     } catch (error) {
       console.error('Error fetching tenants:', error);
-      throw error; // Re-throw to let caller handle it
+      return [];
     }
   },
 
@@ -101,7 +98,7 @@ export const enduserCarsApi = {
       if (filters.type) params.append('category', filters.type); // type maps to category in backend
       if (filters.locationId) params.append('locationId', filters.locationId);
 
-      const response = await apiRequest(`/cars?${params.toString()}`, 'GET');
+      const response = await publicApiRequest(`/cars?${params.toString()}`, 'GET');
       
       if (response.status !== 200) {
         console.error('Failed to fetch cars from tenant:', response.data);
@@ -110,14 +107,14 @@ export const enduserCarsApi = {
       
       let cars: EndUserCar[] = response.data || [];
       
-      // Clean image URLs to prevent loading errors
+
       cars = cars.map(car => ({
         ...car,
         primary_image_url: cleanImageUrl(car.primary_image_url),
         gallery_urls: car.gallery_urls?.map(url => cleanImageUrl(url)).filter((url): url is string => url !== null) || null,
       }));
       
-      // Apply client-side filtering (since /cars endpoint has limited filters)
+
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
         cars = cars.filter(car => 
@@ -164,7 +161,7 @@ export const enduserCarsApi = {
    */
   async searchCars(filters: EndUserCarFilters = {}): Promise<EndUserCar[]> {
     try {
-      // Get all tenants
+
       const tenants = await this.getAllTenants();
       
       if (tenants.length === 0) {
@@ -172,7 +169,7 @@ export const enduserCarsApi = {
         return [];
       }
       
-      // Fetch cars from all tenants in parallel
+
       const carPromises = tenants.map(tenant => 
         this.getCarsFromTenant(tenant.id, filters).catch(err => {
           console.error(`Error fetching cars from tenant ${tenant.id}:`, err);
@@ -182,19 +179,15 @@ export const enduserCarsApi = {
       
       const carsArrays = await Promise.all(carPromises);
       
-      // Flatten and combine all cars
+
       let allCars = carsArrays.flat();
       
-      // Sort by rental_count (most rented first) for "On Fire" feature
+
       allCars.sort((a, b) => (b.rental_count || 0) - (a.rental_count || 0));
       
       return allCars;
     } catch (error: any) {
       console.error('Error searching cars:', error);
-      // Re-throw authentication errors
-      if (error?.message?.includes('Authentication required')) {
-        throw error;
-      }
       return [];
     }
   },
@@ -203,7 +196,7 @@ export const enduserCarsApi = {
    * Get all available cars from all tenants
    */
   async getAllCars(filters: EndUserCarFilters = {}): Promise<EndUserCar[]> {
-    // For end users, we want to show only available cars by default
+
     return this.searchCars({ ...filters, status: filters.status || 'available' });
   },
 
@@ -212,7 +205,7 @@ export const enduserCarsApi = {
    */
   async getCarById(id: string): Promise<EndUserCar | null> {
     try {
-      const response = await apiRequest(`/cars/${id}`, 'GET');
+      const response = await publicApiRequest(`/cars/${id}`, 'GET');
       
       if (response.status !== 200) {
         console.error('Failed to fetch car:', response.data);

@@ -27,6 +27,15 @@ export class TenantsController {
     return this.tenantsService.create(createTenantDto, user.id, file);
   }
 
+  /**
+   * Get all tenants (public - for browse page)
+   * GET /tenants/public
+   */
+  @Get('public')
+  async findAllPublic() {
+    return this.tenantsService.findAll();
+  }
+
   @Get()
   @UseGuards(JwtAuthGuard)
   async findAll() {
@@ -36,6 +45,12 @@ export class TenantsController {
   @Get('by-slug/:slug')
   async findBySlug(@Param('slug') slug: string): Promise<TenantResponseDto> {
     return this.tenantsService.findBySlug(slug);
+  }
+
+  @Get('stats')
+  @UseGuards(JwtAuthGuard)
+  async getStats() {
+    return this.tenantsService.getPlatformStats();
   }
 
   @Get('me')
@@ -77,5 +92,37 @@ export class TenantsController {
     }
 
     return this.tenantsService.update(user.tenant_id, updateTenantDto);
+  }
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  async findOne(@Param('id') id: string) {
+    return this.tenantsService.findOne(id);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  async update(
+    @Param('id') id: string,
+    @Body() updateTenantDto: UpdateTenantDto,
+    @UploadedFile() file?: R2UploadedFile,
+  ) {
+    // If a logo file is uploaded, delete the old logo first, then upload the new one
+    if (file) {
+      // Get current tenant to find existing logo
+      const currentTenant = await this.tenantsService.findOne(id);
+      
+      // Delete old logo if it exists
+      if (currentTenant?.logo_url) {
+        await this.storageService.deleteFile(currentTenant.logo_url);
+      }
+
+      // Upload new logo
+      const folderPath = `tenants/${id}/branding`;
+      const logoUrl = await this.storageService.uploadFile(file, folderPath);
+      updateTenantDto.logoUrl = logoUrl;
+    }
+
+    return this.tenantsService.update(id, updateTenantDto);
   }
 }

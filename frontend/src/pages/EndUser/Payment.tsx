@@ -10,12 +10,17 @@ import { enduserReservationsApi } from "@/services/enduserReservationsApi";
 import { type EndUserCar } from "@/services/enduserCarsApi";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTenantOptional } from "@/contexts/TenantContext";
 
 const Payment = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
+  const tenantContext = useTenantOptional();
+  const tenantSlug = tenantContext?.tenantSlug || '';
+  const basePath = tenantSlug ? `/${tenantSlug}` : '';
+  
   const bookingData = location.state as {
     carId: string;
     car?: EndUserCar;
@@ -44,7 +49,7 @@ const Payment = () => {
         <main className="flex-1 container mx-auto px-4 py-12 flex items-center justify-center">
           <div className="text-center">
             <h1 className="font-heading text-4xl font-bold mb-4">Booking Data Not Found</h1>
-            <Button onClick={() => navigate("/vehicles")} className="bg-primary hover:bg-primary/90">
+            <Button onClick={() => navigate(`${basePath}/vehicles`)} className="bg-primary hover:bg-primary/90">
               Back to Vehicles
             </Button>
           </div>
@@ -113,17 +118,13 @@ const Payment = () => {
         totalPrice: bookingData.totalPrice,
       });
 
-      // TODO: In a real app, you would process the payment here
-      // For now, we'll just create the reservation and navigate to confirmation
-      // Payment processing would be done via BaridiMob API or similar
-
       toast({
         title: "Reservation Created",
         description: "Your reservation has been successfully created.",
       });
 
-      // Navigate to confirmation code page (or directly to confirmation)
-      navigate("/rent/confirm-code", {
+      // Navigate to confirmation
+      navigate(`${basePath}/confirm-code`, {
         state: {
           reservationId: reservation.id,
           reservation: reservation,
@@ -156,7 +157,7 @@ const Payment = () => {
       <main className="flex-1 container mx-auto px-4 py-12">
         <Button
           variant="ghost"
-          onClick={() => navigate(`/rent/${car.id}`)}
+          onClick={() => navigate(`${basePath}/rent/${car.id}`)}
           className="mb-8 flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -196,7 +197,7 @@ const Payment = () => {
                     <p className="text-muted-foreground text-sm">{car.model} {car.year ? `(${car.year})` : ""}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-primary font-bold text-xl">${car.price_per_day}</p>
+                    <p className="text-primary font-bold text-xl">{car.price_per_day} DZD</p>
                     <p className="text-muted-foreground text-xs">per day</p>
                   </div>
                 </div>
@@ -297,7 +298,7 @@ const Payment = () => {
             <div className="flex gap-4">
               <Button
                 variant="outline"
-                onClick={() => navigate(`/rent/${car.id}`)}
+                onClick={() => navigate(`${basePath}/rent/${car.id}`)}
                 className="flex-1"
                 disabled={isProcessing}
               >

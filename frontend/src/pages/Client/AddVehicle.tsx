@@ -52,12 +52,12 @@ export default function AddVehicle() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
   
-  // Location state
+
   const [locations, setLocations] = useState<Location[]>([])
   const [selectedLocationId, setSelectedLocationId] = useState<string>(contextLocation || "")
   const [showLocationModal, setShowLocationModal] = useState(false)
   
-  // Form state
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     make: "",
@@ -73,13 +73,13 @@ export default function AddVehicle() {
     color: "",
   })
   
-  // Image state
+
   const [primaryImage, setPrimaryImage] = useState<File | null>(null)
   const [primaryImagePreview, setPrimaryImagePreview] = useState<string | null>(null)
   const [galleryImages, setGalleryImages] = useState<File[]>([])
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([])
   
-  // Features state
+
   const [features, setFeatures] = useState({
     abs: false,
     airBags: false,
@@ -89,7 +89,7 @@ export default function AddVehicle() {
     gps: false,
   })
 
-  // Fetch locations on mount
+
   useEffect(() => {
     const fetchLocations = async () => {
       try {
@@ -114,12 +114,12 @@ export default function AddVehicle() {
     fetchLocations()
   }, [contextLocation])
 
-  // Handle input change
+
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  // Handle primary image
+
   const handlePrimaryImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -128,20 +128,20 @@ export default function AddVehicle() {
     }
   }
 
-  // Handle gallery images
+
   const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []).slice(0, 10) // Max 10 images
     setGalleryImages(prev => [...prev, ...files].slice(0, 10))
     setGalleryPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))].slice(0, 10))
   }
 
-  // Remove gallery image
+
   const removeGalleryImage = (index: number) => {
     setGalleryImages(prev => prev.filter((_, i) => i !== index))
     setGalleryPreviews(prev => prev.filter((_, i) => i !== index))
   }
 
-  // Get selected features as array
+
   const getFeaturesList = (): string[] => {
     const featuresList: string[] = []
     if (features.abs) featuresList.push("ABS")
@@ -153,7 +153,7 @@ export default function AddVehicle() {
     return featuresList
   }
 
-  // Validate form
+
   const validateForm = (): boolean => {
     if (!selectedLocationId || selectedLocationId === "") {
       toast({ 
@@ -186,7 +186,7 @@ export default function AddVehicle() {
     return true
   }
 
-  // Submit form
+
   const handleSubmit = async () => {
     if (!validateForm()) return
 
@@ -239,7 +239,7 @@ export default function AddVehicle() {
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       
-      {/* Force Location Selection Modal */}
+
       <Dialog open={showLocationModal} onOpenChange={(open) => {
         // Prevent closing without selection
         if (!open && !selectedLocationId) {
@@ -339,7 +339,7 @@ export default function AddVehicle() {
       <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
         <h1 className="text-4xl font-bold mb-8">Add New Vehicle</h1>
 
-        {/* Show Selected Location */}
+
         {selectedLocationId && locations.length > 0 && (
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
             <MapPin className="w-5 h-5 text-blue-600" />
@@ -365,9 +365,9 @@ export default function AddVehicle() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Basic Info & Images */}
+
           <div className="lg:col-span-1 space-y-6">
-            {/* Basic Info */}
+
             <Card className="p-6 border rounded-xl">
               <h3 className="font-bold text-lg mb-4">Basic Information</h3>
               <div className="space-y-4">
@@ -442,11 +442,11 @@ export default function AddVehicle() {
               </div>
             </Card>
 
-            {/* Car Images */}
+
             <Card className="p-6 border rounded-xl">
               <h3 className="font-bold text-lg mb-4">Vehicle Images</h3>
               
-              {/* Primary Image */}
+
               <div 
                 className="w-full h-48 bg-muted rounded-lg mb-4 flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors overflow-hidden"
                 onClick={() => fileInputRef.current?.click()}
@@ -468,7 +468,7 @@ export default function AddVehicle() {
                 className="hidden"
               />
 
-              {/* Gallery Images */}
+
               <p className="text-sm font-medium mb-2">Gallery ({galleryImages.length}/10)</p>
               <div className="grid grid-cols-4 gap-2">
                 {galleryPreviews.map((preview, index) => (
@@ -502,9 +502,9 @@ export default function AddVehicle() {
             </Card>
           </div>
 
-          {/* Right Column - Specs & Features */}
+
           <div className="lg:col-span-2 space-y-6">
-            {/* Technical Specification */}
+
             <Card className="p-6 border rounded-xl">
               <h3 className="font-bold text-xl mb-6">Technical Specification</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
@@ -556,7 +556,7 @@ export default function AddVehicle() {
               </div>
             </Card>
 
-            {/* Car Features */}
+
             <Card className="p-6 border rounded-xl">
               <h3 className="font-bold text-xl mb-4">Car Features</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -579,7 +579,7 @@ export default function AddVehicle() {
               </div>
             </Card>
 
-            {/* Color */}
+
             <Card className="p-6 border rounded-xl">
               <h3 className="font-bold text-xl mb-4">Color</h3>
               <Select value={formData.color} onValueChange={(v) => handleChange("color", v)}>
@@ -594,7 +594,7 @@ export default function AddVehicle() {
               </Select>
             </Card>
 
-            {/* Submit Buttons */}
+
             <div className="flex gap-4">
               <Button
                 onClick={() => navigate("/client/vehicles")}

@@ -13,7 +13,6 @@ import SignUp from "./pages/SignUp"
 import VerifyEmail from "./pages/VerifyEmail"
 import ForgotPassword from "./pages/ForgotPassword"
 import ResetPassword from "./pages/ResetPassword"
-import RoleSelection from "./pages/RoleSelection"
 
 // Client Pages
 import ClientHome from "./pages/Client/Home"
@@ -51,6 +50,16 @@ import TenantDetails from "./pages/EndUser/TenantDetails"
 import EndUserReservationDetails from "./pages/EndUser/ReservationDetails"
 import { RentalDataProvider } from "./contexts/RentalDataContext"
 
+// Tenant-Based Routing
+import TenantLayout from "./components/TenantLayout"
+import BrowseTenants from "./pages/BrowseTenants"
+
+// Super Admin Pages
+import SuperAdminDashboard from "./pages/SuperAdmin/Dashboard"
+import SuperAdminTenants from "@/pages/SuperAdmin/Tenants";
+import SuperAdminAddTenant from "@/pages/SuperAdmin/AddTenant";
+import SuperAdminEditTenant from "@/pages/SuperAdmin/EditTenant";
+
 // Other Pages
 import NotFound from "./pages/NotFound"
 import { ProtectedRoute } from "./components/ProtectedRoute"
@@ -66,9 +75,10 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Navigate to="/role-select" replace />} />
+              <Route path="/" element={<Navigate to="/browse" replace />} />
 
-              <Route path="/role-select" element={<RoleSelection />} />
+              <Route path="/browse" element={<BrowseTenants />} />
+
 
               {/* Auth pages */}
               <Route path="/signin" element={<SignIn />} />
@@ -213,33 +223,34 @@ const App = () => (
                 }
               />
 
-              {/* End User Portal Routes */}
-              <Route path="/enduser" element={<EndUserIndex />} />
-              <Route path="/enduser/vehicles" element={<EndUserVehicles />} />
-              <Route path="/enduser/vehicles/:id" element={<CarDetails />} />
-              <Route path="/enduser/compare" element={<CompareCars />} />
-              <Route path="/enduser/rent/:id" element={<RentCar />} />
-              <Route path="/enduser/payment" element={<Payment />} />
-              <Route path="/enduser/confirm-code" element={<ConfirmationCode />} />
-              <Route path="/enduser/confirmation" element={<ReservationConfirmation />} />
-              <Route path="/enduser/about" element={<EndUserAbout />} />
-              <Route path="/enduser/contact" element={<EndUserContact />} />
-              <Route path="/enduser/profile" element={<EndUserProfile />} />
-              <Route path="/enduser/profile/edit" element={<EndUserEditProfile />} />
-              <Route path="/enduser/rental-policy" element={<EndUserRentalPolicy />} />
-              <Route path="/enduser/faq" element={<EndUserFAQ />} />
-              <Route path="/enduser/tenant/:id" element={<TenantDetails />} />
-              <Route path="/enduser/reservation/:id" element={<EndUserReservationDetails />} />
+              {/* Tenant-Based Customer Routes (/:tenantSlug/*) */}
+              <Route path="/:tenantSlug" element={<TenantLayout />}>
+                <Route index element={<EndUserIndex />} />
+                <Route path="vehicles" element={<EndUserVehicles />} />
+                <Route path="vehicles/:id" element={<CarDetails />} />
+                <Route path="compare" element={<CompareCars />} />
+                <Route path="rent/:id" element={<RentCar />} />
+                <Route path="payment" element={<Payment />} />
+                <Route path="confirm-code" element={<ConfirmationCode />} />
+                <Route path="confirmation" element={<ReservationConfirmation />} />
+                <Route path="about" element={<EndUserAbout />} />
+                <Route path="contact" element={<EndUserContact />} />
+                <Route path="profile" element={<EndUserProfile />} />
+                <Route path="profile/edit" element={<EndUserEditProfile />} />
+                <Route path="rental-policy" element={<EndUserRentalPolicy />} />
+                <Route path="faq" element={<EndUserFAQ />} />
+                <Route path="reservation/:id" element={<EndUserReservationDetails />} />
+              </Route>
 
-              {/* Legacy route redirects for backward compatibility */}
-              <Route path="/compare" element={<Navigate to="/enduser/compare" replace />} />
-              <Route path="/rent/:id" element={<RentCar />} />
-              <Route path="/about" element={<Navigate to="/enduser/about" replace />} />
-              <Route path="/contact" element={<Navigate to="/enduser/contact" replace />} />
-              <Route path="/profile" element={<Navigate to="/enduser/profile" replace />} />
-              <Route path="/vehicles" element={<Navigate to="/enduser/vehicles" replace />} />
-              <Route path="/vehicles/:id" element={<CarDetails />} />
-              <Route path="/rental-policy" element={<Navigate to="/enduser/rental-policy" replace />} />
+              {/* Super Admin Routes */}
+              <Route path="/admin/dashboard" element={<SuperAdminDashboard />} />
+              <Route path="/admin/tenants" element={<SuperAdminTenants />} />
+              <Route path="/admin/tenants/new" element={<SuperAdminAddTenant />} />
+              <Route path="/admin/tenants/:id/edit" element={<SuperAdminEditTenant />} />
+
+              {/* Legacy /enduser redirects */}
+              <Route path="/enduser" element={<Navigate to="/browse" replace />} />
+              <Route path="/enduser/*" element={<Navigate to="/browse" replace />} />
 
               {/* 404 catch-all */}
               <Route path="*" element={<NotFound />} />

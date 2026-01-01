@@ -51,13 +51,13 @@ const ReservationDetails = () => {
       try {
         const data = await enduserReservationsApi.getById(id);
         
-        // Fetch car details if not included
+
         let carData = data.cars || data.car;
         if (!carData && data.car_id) {
           carData = await enduserCarsApi.getCarById(data.car_id);
         }
 
-        // Fetch tenant details if we have tenant_id
+
         let tenantData = null;
         if (data.tenant_id) {
           tenantData = await enduserCarsApi.getTenantById(data.tenant_id);
@@ -222,7 +222,7 @@ const ReservationDetails = () => {
             </div>
             <div class="info-row">
               <span class="info-label">Price per Day:</span>
-              <span class="info-value">$${reservation.car.price_per_day.toFixed(2)}</span>
+              <span class="info-value">${reservation.car.price_per_day.toFixed(2)} DZD</span>
             </div>
           </div>
 
@@ -231,7 +231,7 @@ const ReservationDetails = () => {
             <div class="total">
               <div class="info-row">
                 <span class="info-label">Total Amount:</span>
-                <span class="amount">$${reservation.total_price.toFixed(2)}</span>
+                <span class="amount">${reservation.total_price.toFixed(2)} DZD</span>
               </div>
             </div>
           </div>
@@ -291,7 +291,7 @@ const ReservationDetails = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8 max-w-5xl">
-        {/* Back Button */}
+
         <Button
           variant="ghost"
           onClick={() => navigate("/profile")}
@@ -301,7 +301,7 @@ const ReservationDetails = () => {
           Back to My Reservations
         </Button>
 
-        {/* Header */}
+
         <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
           <div>
             <h1 className="font-heading text-3xl md:text-4xl font-bold mb-2">Reservation Details</h1>
@@ -312,11 +312,11 @@ const ReservationDetails = () => {
           </div>
         </div>
 
-        {/* Main Content */}
+
         <div className="bg-card rounded-lg border border-border shadow-sm mb-6">
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Left Column - Car Info */}
+
               <div>
                 <h2 className="font-semibold text-lg mb-4 flex items-center gap-2">
                   <CarIcon className="w-5 h-5 text-primary" />
@@ -342,7 +342,7 @@ const ReservationDetails = () => {
                     </div>
                     <h3 className="font-bold text-xl">{reservation.car.make} {reservation.car.model}</h3>
                     {reservation.car.year && <p className="text-muted-foreground">{reservation.car.year}</p>}
-                    <p className="text-lg font-semibold text-primary mt-2">${reservation.car.price_per_day}/day</p>
+                    <p className="text-lg font-semibold text-primary mt-2">{reservation.car.price_per_day} DZD/day</p>
                     <Button
                       variant="outline"
                       onClick={() => navigate(`/vehicles/${reservation.car_id}`)}
@@ -354,7 +354,7 @@ const ReservationDetails = () => {
                 )}
               </div>
 
-              {/* Right Column - Reservation Details */}
+
               <div>
                 <h2 className="font-semibold text-lg mb-4 flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-primary" />
@@ -408,7 +408,7 @@ const ReservationDetails = () => {
 
                   <div className="pt-4 border-t border-border">
                     <p className="text-sm text-muted-foreground mb-1">Total Amount</p>
-                    <p className="text-3xl font-bold text-primary">${reservation.total_price.toFixed(2)}</p>
+                    <p className="text-3xl font-bold text-primary">{reservation.total_price.toFixed(2)} DZD</p>
                   </div>
 
                   <div>
@@ -421,7 +421,7 @@ const ReservationDetails = () => {
           </div>
         </div>
 
-        {/* Status Info */}
+
         {reservation.status === 'pending' && (
           <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
             <p className="text-sm text-yellow-800 dark:text-yellow-200">
@@ -446,7 +446,7 @@ const ReservationDetails = () => {
           </div>
         )}
 
-        {/* Action Buttons */}
+
         <div className="flex flex-col sm:flex-row gap-4">
           <Button
             onClick={handleDownloadReceipt}

@@ -19,8 +19,8 @@ const SignUp = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { setUser, setUserRole, user } = useAuth()
-  const [loading, setLoading] = useState(false) // State for loading
-  const [error, setError] = useState<string | null>(null) // State for error messages
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     name: "",
@@ -44,7 +44,7 @@ const SignUp = () => {
     }))
   }
 
-  // Helper for Checkbox component as it has a different signature
+
   const handleCheckboxChange = (checked: boolean) => {
     setFormData((prev) => ({ ...prev, termsAccepted: checked }))
   }
@@ -97,24 +97,23 @@ const SignUp = () => {
         return
       }
 
-      const newUser = { ...data.user, role }
-      setUser(newUser)
-      setUserRole(role)
 
-      // Check emailVerified flag in response
       if (data.emailVerified === false) {
-        // Customer signup - email verification required
-        navigate("/signin", {
+
+        navigate("/verify-email", {
           replace: true,
           state: {
-            message: "Registration successful! Please check your email to verify your account before logging in.",
+            email: formData.email,
+            message: "Account created! Please check your email to verify your account.",
           },
         })
       } else {
-        // Admin signup (auto-verified) - should not happen for regular customers
-        navigate("/signin", {
+
+        const newUser = { ...data.user, role }
+        setUser(newUser)
+        setUserRole(role)
+        navigate(role === "client" ? "/client/location-select" : "/browse", {
           replace: true,
-          state: { message: "Registration successful! You can now log in." },
         })
       }
     } catch (err) {
@@ -133,7 +132,7 @@ const SignUp = () => {
           <h2 className="text-3xl font-bold text-center text-white">Sign Up</h2>
           <p className="text-center text-white/70">Join RentoGo today to access exclusive car rental deals!</p>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Error Display Logic */}
+
             {error && <div className="bg-red-500/20 text-red-300 p-3 rounded-lg text-sm text-center">{error}</div>}
 
             <Input

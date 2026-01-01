@@ -7,7 +7,7 @@ import { ArrowLeft, Building2, Phone, Mail, MapPin, Car as CarIcon, Loader2 } fr
 import { enduserCarsApi, type EndUserCar } from "@/services/enduserCarsApi";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
-import { CarCard } from "@/components/CarCard";
+import CarCard from "@/components/CarCard";
 
 interface Tenant {
   id: string;
@@ -40,7 +40,7 @@ const TenantDetails = () => {
 
       setIsLoading(true);
       try {
-        // Fetch tenant details
+
         const tenantData = await enduserCarsApi.getTenantById(id);
         if (!tenantData) {
           toast({
@@ -53,7 +53,7 @@ const TenantDetails = () => {
         }
         setTenant(tenantData);
 
-        // Fetch tenant's cars
+
         const tenantCars = await enduserCarsApi.getCarsFromTenant(id, { status: 'available' });
         setCars(tenantCars);
       } catch (error: any) {
@@ -105,7 +105,7 @@ const TenantDetails = () => {
       <Header />
       
       <main className="flex-1 container mx-auto px-4 py-12">
-        {/* Back Button */}
+
         <Button
           variant="ghost"
           onClick={() => navigate("/vehicles")}
@@ -115,10 +115,10 @@ const TenantDetails = () => {
           Back to Vehicles
         </Button>
 
-        {/* Tenant Information Section */}
+
         <div className="bg-card rounded-2xl p-8 mb-12 border border-border shadow-lg">
           <div className="flex flex-col md:flex-row gap-8 items-start">
-            {/* Tenant Logo/Icon */}
+
             <div className="flex-shrink-0">
               {tenant.logo_url ? (
                 <img
@@ -133,7 +133,7 @@ const TenantDetails = () => {
               )}
             </div>
 
-            {/* Tenant Details */}
+
             <div className="flex-1">
               <h1 className="font-heading text-4xl md:text-5xl font-bold mb-6">{tenant.name}</h1>
               
@@ -156,7 +156,7 @@ const TenantDetails = () => {
           </div>
         </div>
 
-        {/* Available Cars Section */}
+
         <div className="mb-12">
           <div className="flex items-center justify-between mb-8">
             <h2 className="font-heading text-3xl font-bold">Available Cars</h2>
@@ -195,7 +195,7 @@ const TenantDetails = () => {
                         <p className="text-muted-foreground text-sm">{car.model} {car.year ? `(${car.year})` : ""}</p>
                       </div>
                       <div className="text-right ml-4">
-                        <p className="text-primary font-bold text-xl">${car.price_per_day}</p>
+                        <p className="text-primary font-bold text-xl">{car.price_per_day} DZD</p>
                         <p className="text-muted-foreground text-xs">per day</p>
                       </div>
                     </div>

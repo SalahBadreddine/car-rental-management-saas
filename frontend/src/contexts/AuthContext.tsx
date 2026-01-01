@@ -2,27 +2,34 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { getAccessToken, getUser, getUserRole, setUserRole as saveUserRole } from "@/lib/auth"
+import { apiRequest } from "@/lib/api"
 
 interface User {
   id: string
   email: string
   name?: string
   full_name?: string
-  role: "client" | "enduser" | "client_admin" | "customer"
+  avatar_url?: string
+  role: "client" | "enduser" | "client_admin" | "customer" | "super_admin"
   tenant_id?: string
   company?: string
+  phone_number?: string
 }
 
 interface AuthContextType {
   user: User | null
-  userRole: "client" | "enduser" | null
+  userRole: "client" | "enduser" | "super_admin" | null
   tenantId: string | null
   selectedLocation: string | null
   isLoading: boolean
+  isTenantDataLoading: boolean
   isAdmin: boolean
+  tenantData: any | null
+  websiteConfig: Record<string, any>
   setUser: (user: User | null) => void
-  setUserRole: (role: "client" | "enduser") => void
+  setUserRole: (role: "client" | "enduser" | "super_admin") => void
   setSelectedLocation: (location: string) => void
+  updateWebsiteConfig: (config: Record<string, any>) => void
   clearAuth: () => void
 }
 
@@ -33,7 +40,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
  * Backend uses: client_admin, customer
  * Frontend uses: client, enduser
  */
-const mapBackendRole = (backendRole: string): "client" | "enduser" => {
+const mapBackendRole = (backendRole: string): "client" | "enduser" | "super_admin" => {
+  if (backendRole === "super_admin") {
+    return "super_admin"
+  }
   if (backendRole === "client_admin" || backendRole === "client") {
     return "client"
   }
@@ -42,12 +52,15 @@ const mapBackendRole = (backendRole: string): "client" | "enduser" => {
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUserState] = useState<User | null>(null)
-  const [userRole, setUserRoleState] = useState<"client" | "enduser" | null>(null)
+  const [userRole, setUserRoleState] = useState<"client" | "enduser" | "super_admin" | null>(null)
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isTenantDataLoading, setIsTenantDataLoading] = useState(false)
+  const [tenantData, setTenantData] = useState<any | null>(null)
+  const [websiteConfig, setWebsiteConfig] = useState<Record<string, any>>({})
 
-  // Initialize from localStorage on mount
+
   useEffect(() => {
     const token = getAccessToken()
     const storedUser = getUser()
@@ -55,12 +68,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const storedLocation = localStorage.getItem("selectedLocation")
 
     if (token && storedUser) {
+      console.log('AuthContext Init via localStorage:', { storedUser, storedRole })
       setUserState(storedUser)
       
-      // Map backend role to frontend role
+
       const mappedRole = storedUser.role 
         ? mapBackendRole(storedUser.role) 
-        : (storedRole as "client" | "enduser") || "enduser"
+        : (storedRole as "client" | "enduser" | "super_admin") || "enduser"
       
       setUserRoleState(mappedRole)
       setTenantId(storedUser.tenant_id || null)
@@ -73,11 +87,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false)
   }, [])
 
+
+  const isAdmin = userRole === "client" || user?.role === "client_admin"
+
+
+  useEffect(() => {
+    const fetchTenantData = async () => {
+      if (tenantId && isAdmin) {
+        setIsTenantDataLoading(true)
+        try {
+          const response = await apiRequest(`/tenants/${tenantId}`, 'GET')
+          if (response.status === 200 && response.data) {
+            setTenantData(response.data)
+            setWebsiteConfig(response.data.website_config || {})
+          }
+        } catch (error) {
+          console.error('Failed to fetch tenant data:', error)
+        } finally {
+          setIsTenantDataLoading(false)
+        }
+      }
+    }
+    
+    fetchTenantData()
+  }, [tenantId, isAdmin])
+
   const setUser = (newUser: User | null) => {
     setUserState(newUser)
     if (newUser) {
       setTenantId(newUser.tenant_id || null)
-      // Also update role when user changes
+
       if (newUser.role) {
         const mappedRole = mapBackendRole(newUser.role)
         setUserRoleState(mappedRole)
@@ -88,18 +127,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  const setUserRole = (role: "client" | "enduser") => {
+  const setUserRole = (role: "client" | "enduser" | "super_admin") => {
     setUserRoleState(role)
     saveUserRole(role)
   }
 
   const handleSetSelectedLocation = (location: string) => {
     setSelectedLocation(location)
-    // Save to localStorage - empty string means "ALL", so we save as "ALL"
     if (location === "") {
       localStorage.setItem("selectedLocation", "ALL")
     } else if (location) {
       localStorage.setItem("selectedLocation", location)
+    }
+  }
+
+  const updateWebsiteConfig = (config: Record<string, any>) => {
+    setWebsiteConfig(config)
+    if (tenantData) {
+      setTenantData({ ...tenantData, website_config: config })
     }
   }
 
@@ -108,11 +153,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUserRoleState(null)
     setTenantId(null)
     setSelectedLocation(null)
+    setTenantData(null)
+    setWebsiteConfig({})
     localStorage.removeItem("selectedLocation")
   }
-
-  // Check if user is admin
-  const isAdmin = userRole === "client" || user?.role === "client_admin"
 
   return (
     <AuthContext.Provider
@@ -122,10 +166,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         tenantId,
         selectedLocation,
         isLoading,
+        isTenantDataLoading,
         isAdmin,
+        tenantData,
+        websiteConfig,
         setUser,
         setUserRole,
         setSelectedLocation: handleSetSelectedLocation,
+        updateWebsiteConfig,
         clearAuth,
       }}
     >

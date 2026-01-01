@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast"
 
 type NotificationFilter = "ALL" | "unread" | "read"
 
-// Format time ago helper
+
 const formatTimeAgo = (dateString: string) => {
   const date = new Date(dateString)
   const now = new Date()
@@ -38,7 +38,7 @@ export default function ClientNotifications() {
   const itemsPerPage = 10
   const { toast } = useToast()
 
-  // Fetch notifications on mount
+
   useEffect(() => {
     const fetchNotifications = async () => {
       setIsLoading(true)
@@ -61,10 +61,10 @@ export default function ClientNotifications() {
     fetchNotifications()
   }, [])
 
-  // Filter notifications
+
   const filteredNotifications = useMemo(() => {
     return notifications.filter((notif) => {
-      // Search filter
+
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
         const matchesMessage = notif.message?.toLowerCase().includes(query)
@@ -75,7 +75,7 @@ export default function ClientNotifications() {
         }
       }
 
-      // Read/unread filter
+
       if (filter === "unread" && notif.is_read) return false
       if (filter === "read" && !notif.is_read) return false
 
@@ -83,7 +83,7 @@ export default function ClientNotifications() {
     })
   }, [notifications, searchQuery, filter])
 
-  // Paginate filtered notifications
+
   const paginatedNotifications = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
     const endIndex = startIndex + itemsPerPage
@@ -92,12 +92,12 @@ export default function ClientNotifications() {
 
   const totalPages = Math.ceil(filteredNotifications.length / itemsPerPage)
 
-  // Reset to page 1 when filters change
+
   useEffect(() => {
     setCurrentPage(1)
   }, [filter, searchQuery])
 
-  // Handle mark as read
+
   const handleMarkAsRead = async (notificationId: string) => {
     try {
       const success = await notificationsApi.markAsRead(notificationId)
@@ -116,7 +116,7 @@ export default function ClientNotifications() {
     }
   }
 
-  // Handle mark all as read
+
   const handleMarkAllAsRead = async () => {
     try {
       const success = await notificationsApi.markAllAsRead()
@@ -137,7 +137,7 @@ export default function ClientNotifications() {
     }
   }
 
-  // Get type badge styling
+
   const getTypeBadge = (type: string) => {
     const styles: Record<string, string> = {
       info: "bg-blue-100 text-blue-700 border-blue-200",
@@ -153,7 +153,7 @@ export default function ClientNotifications() {
       <Header />
 
       <main className="flex-1 container mx-auto px-4 py-12">
-        {/* Page Header */}
+
         <div className="text-center mb-8">
           <h1 className="text-5xl font-bold mb-4">Notifications</h1>
           <p className="text-gray-600 text-lg">
@@ -161,7 +161,7 @@ export default function ClientNotifications() {
           </p>
         </div>
 
-        {/* Search Bar */}
+
         <div className="mb-8 max-w-2xl mx-auto">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -175,7 +175,7 @@ export default function ClientNotifications() {
           </div>
         </div>
 
-        {/* Filter Buttons */}
+
         <div className="flex flex-wrap justify-center gap-3 mb-8">
           {(["ALL", "unread", "read"] as NotificationFilter[]).map((f) => (
             <Button
@@ -208,14 +208,14 @@ export default function ClientNotifications() {
           )}
         </div>
 
-        {/* Loading State */}
+
         {isLoading && (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-12 h-12 animate-spin text-[#DC2626]" />
           </div>
         )}
 
-        {/* Empty State */}
+
         {!isLoading && filteredNotifications.length === 0 && (
           <div className="text-center py-20">
             <Bell className="w-20 h-20 text-muted-foreground/30 mx-auto mb-4" />
@@ -228,7 +228,7 @@ export default function ClientNotifications() {
           </div>
         )}
 
-        {/* Notifications List */}
+
         {!isLoading && filteredNotifications.length > 0 && (
           <>
             <div className="space-y-4 max-w-4xl mx-auto">
@@ -241,13 +241,13 @@ export default function ClientNotifications() {
                 onClick={() => !notif.is_read && handleMarkAsRead(notif.id)}
               >
                 <div className="flex items-start gap-4">
-                  {/* Status Indicator */}
+
                   <div className={`w-3 h-3 rounded-full mt-2 flex-shrink-0 ${
                     !notif.is_read ? 'bg-[#DC2626]' : 'bg-gray-300'
                   }`} />
                   
                   <div className="flex-1">
-                    {/* Header */}
+
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <h3 className={`font-semibold ${!notif.is_read ? 'text-black' : 'text-gray-600'}`}>
@@ -260,19 +260,19 @@ export default function ClientNotifications() {
                       <span className="text-sm text-gray-500">{formatTimeAgo(notif.created_at)}</span>
                     </div>
                     
-                    {/* Message */}
+
                     <p className={`mb-3 ${!notif.is_read ? 'text-gray-800' : 'text-gray-500'}`}>
                       {notif.message}
                     </p>
                     
-                    {/* Notification Type Badge Already Shown Above */}
+
                   </div>
                 </div>
               </Card>
               ))}
             </div>
             
-            {/* Pagination Controls */}
+
             {totalPages > 1 && (
               <div className="flex items-center justify-center gap-2 mt-8 max-w-4xl mx-auto">
                 <Button

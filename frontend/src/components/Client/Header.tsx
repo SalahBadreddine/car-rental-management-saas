@@ -86,7 +86,7 @@ const Header = () => {
   const handleLogout = () => {
     logout()
     clearAuth()
-    navigate("/role-select", { replace: true })
+    navigate("/browse", { replace: true })
   }
 
   const handleLocationChange = (locationId: string | null) => {
@@ -105,7 +105,7 @@ const Header = () => {
     }
   }
 
-  const hideNav = ["/signin", "/signup", "/role-select"].includes(location.pathname)
+  const hideNav = ["/signin", "/signup"].includes(location.pathname)
 
   return (
     <header className="bg-white/80 backdrop-blur-sm sticky top-0 z-50 border-b">

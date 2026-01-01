@@ -14,11 +14,11 @@ const CarDetails = () => {
   const navigate = useNavigate();
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
   
-  // Safely parse the car ID
+
   const carId = id ? parseInt(id, 10) : null;
   const car: Car | undefined = carId ? cars.find((c) => c.id === carId) : undefined;
   
-  // Car equipment list
+
   const carEquipment = [
     "ABS",
     "Air Bags",
@@ -75,7 +75,7 @@ const CarDetails = () => {
       <Header />
       
       <main className="flex-1 container mx-auto px-4 py-12">
-        {/* Back Button */}
+
         <Button
           variant="ghost"
           onClick={() => navigate("/vehicles")}
@@ -86,31 +86,31 @@ const CarDetails = () => {
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Left Column - Car Image & Availability */}
+
           <div className="space-y-6">
-            {/* Availability Badge */}
+
             <div className="flex items-center gap-4">
               <span className="px-4 py-1 bg-green-500 text-white rounded text-sm font-semibold">
                 Available
               </span>
             </div>
 
-            {/* Car Name and Price */}
+
             <div>
               <h1 className="font-heading text-4xl md:text-5xl font-bold mb-2">
                 {car.brand}
               </h1>
               <p className="text-3xl text-primary font-bold mb-6">
-                ${car.price} <span className="text-lg text-muted-foreground">/ day</span>
+                {car.price} DZD <span className="text-lg text-muted-foreground">/ day</span>
               </p>
             </div>
 
-            {/* Main Car Image */}
+
             <div className="bg-gradient-to-br from-card-dark to-card-dark/80 rounded-2xl p-12 h-96 flex items-center justify-center">
               <CarIcon className="w-64 h-64 text-muted-foreground/30" />
             </div>
             
-            {/* Thumbnail Images */}
+
             <div className="grid grid-cols-3 gap-4">
               {[1, 2, 3].map((i) => (
                 <div
@@ -122,7 +122,7 @@ const CarDetails = () => {
               ))}
             </div>
 
-            {/* Availability Section with Calendar */}
+
             <div className="bg-card rounded-lg p-6 border border-border">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-heading text-xl font-bold flex items-center gap-2">
@@ -151,10 +151,10 @@ const CarDetails = () => {
             </div>
           </div>
 
-          {/* Right Column - Technical Specs & Equipment */}
+
           <div className="space-y-6">
 
-            {/* Technical Specification */}
+
             <div>
               <h2 className="font-heading text-xl font-bold mb-4">Technical Specification</h2>
               <div className="grid grid-cols-2 gap-4">
@@ -224,7 +224,7 @@ const CarDetails = () => {
               </div>
             </div>
 
-            {/* Car Equipment */}
+
             <div>
               <h2 className="font-heading text-xl font-bold mb-4">Car Equipment</h2>
               <div className="grid grid-cols-2 gap-3">
@@ -237,7 +237,7 @@ const CarDetails = () => {
               </div>
             </div>
 
-            {/* Car Equipment */}
+
             <div className="bg-card rounded-lg p-6 border border-border">
                 <h2 className="font-heading text-xl font-bold mb-4">
                     Latest Reservations
@@ -250,7 +250,7 @@ const CarDetails = () => {
                 </div>
             </div>
 
-            {/* Edit Button */}
+
             <div className="w-[200px]">
               <Button
                 onClick={() => navigate(`/rent/${car.id}`)}
@@ -262,7 +262,7 @@ const CarDetails = () => {
           </div>
         </div>
 
-        {/* Similar Cars Section */}
+
         <div className="mt-16">
           <h2 className="font-heading text-3xl font-bold mb-8">Similar Cars</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -282,7 +282,7 @@ const CarDetails = () => {
                       {similarCar.brand} {similarCar.type}
                     </h3>
                     <p className="text-primary font-bold text-xl mb-4">
-                      ${similarCar.price} <span className="text-sm text-muted-foreground">per day</span>
+                      {similarCar.price} DZD <span className="text-sm text-muted-foreground">per day</span>
                     </p>
                     <Button
                       type="button"
