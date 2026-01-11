@@ -1,5 +1,27 @@
 # History files
 .history/
 **/.history/
+
+# OS files
+.DS_Store
+**/.DS_Store
+
+# Archives
+*.zip
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+**/dist/
+
+# Environment files
+.env
+**/.env
+.env.local
+.env.*.local
+
+# Old schema file
 DB_SCHEMA.sql
-# /postman

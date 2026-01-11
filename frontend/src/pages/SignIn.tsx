@@ -25,7 +25,7 @@ const SignIn = () => {
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(location.state?.message || null)
 
-  const API_URL = "http://localhost:3000"
+  const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"
   const role = (searchParams.get("role") || "enduser") as "client" | "enduser"
 
   if (user) {
