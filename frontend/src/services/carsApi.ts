@@ -1,7 +1,7 @@
 import { apiRequest } from '@/lib/api';
 import { getUser } from '@/lib/auth';
 
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
 export interface Car {
   id: string;

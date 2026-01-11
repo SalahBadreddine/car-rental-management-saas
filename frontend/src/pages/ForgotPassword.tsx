@@ -13,7 +13,7 @@ const ForgotPassword = () => {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const API_URL = "http://localhost:3000";
+  const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

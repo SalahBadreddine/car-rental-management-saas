@@ -1,6 +1,6 @@
 import { saveTokens, saveUser, logout, getAccessToken } from "./auth";
 
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 let isRefreshing = false;
 let failedQueue: Array<{ resolve: Function; reject: Function }> = [];

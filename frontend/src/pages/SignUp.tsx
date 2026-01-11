@@ -69,7 +69,7 @@ const SignUp = () => {
     const role = (searchParams.get("role") || "enduser") as "client" | "enduser"
 
     try {
-      const res = await fetch("http://localhost:3000/auth/signup", {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"}/auth/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
